@@ -1,0 +1,130 @@
+# Design system
+
+The design system for an iOS 17 SwiftUI screenshot triage app: one screenshot at a time as a card,
+swipe left to trash, right to archive, up to favorite. This folder holds the tokens, the
+documentation and a living style guide. The app itself is the next phase and is not here.
+
+Swift is canonical (ADR-001): every value is typed once under `Sift/DesignSystem/`, and one script
+derives the CSS variables, the WCAG contrast table and the name lint from it.
+
+## File map
+
+| Path | What it is |
+|---|---|
+| `Sift/DesignSystem/*.swift` | The nine token files. The only place a value is typed |
+| `docs/knowledge/UI_DESIGN.md` | The design system: tokens, components, screens, the generated contrast table |
+| `docs/knowledge/DESIGN_PRINCIPLES.md` | P-01 to P-23, the rules a review cites |
+| `docs/knowledge/PRINCIPLES_CHECKLIST.md` | 27 lines for the 23 principles (P-19 gets four, P-15 gets two), plus a pre-ship list for a screen |
+| `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-024, plus the superseded decisions S-1 to S-4 |
+| `docs/superpowers/specs/2026-09-23-sift-design-system-design.md` | The design spec behind all of it |
+| `docs/references.md` | Reference boards, the format reference, three Lazyweb permission-screen links |
+| `design-system.html` | Single-file living style guide with a working swipe demo |
+| `scripts/ds_tokens.py` | `contrast`, `emit-css`, `lint`. Standard library only |
+| `scripts/typecheck-ds.sh` | Type-checks the token files without an Xcode project |
+| `scripts/out/` | Generated output. Git-ignored; the copies that matter are pasted into the documents |
+
+Every count in that table is derived rather than remembered, because a count in prose goes stale the
+moment the file it describes grows. Re-derive them, and replace the figures here with what they
+print:
+
+```
+ls Sift/DesignSystem/*.swift | wc -l                        # token files, 9
+grep -c '^## ADR-' docs/knowledge/DECISIONS.md              # ADRs, 24
+grep -o '^## ADR-[0-9]\{3\}' docs/knowledge/DECISIONS.md \
+  | tail -1                                                # highest ADR, ## ADR-024
+grep -c '^### S-' docs/knowledge/DECISIONS.md               # superseded entries, 4
+grep -c '^\*\*P-' docs/knowledge/DESIGN_PRINCIPLES.md       # principles, 23
+grep -c '^- \[ \] P-' docs/knowledge/PRINCIPLES_CHECKLIST.md # principle checklist lines, 27
+```
+
+The figures after each `#` are what those commands printed on 2026-09-24, run from the repository
+root. The ADR range in the table above comes from the second and third of them: the log runs
+ADR-001 to ADR-024 with no gaps, and S-1 to S-4 alongside.
+
+## Viewing the guide
+
+`open design-system.html`, or serve the folder with `python3 -m http.server` and open
+`http://localhost:8000/design-system.html`. It is one file with inline CSS and JavaScript and needs
+no build step.
+
+## Commands
+
+Four commands, and they are the whole verification set. Changing a token means running all four,
+because `lint` compares the `:root` block pasted into the guide against fresh `emit-css` output.
+
+| # | Command | Expected output |
+|---|---|---|
+| 1 | `python3 scripts/ds_tokens.py contrast` | ends with `43 pairs · 0 failure(s)`, and no `OUT OF sRGB GAMUT` note in the token table |
+| 2 | `python3 scripts/ds_tokens.py emit-css > scripts/out/tokens.css` | writes the `:root` block; paste it into `design-system.html` |
+| 3 | `python3 scripts/ds_tokens.py lint` | three `lint: EXCEPTION` lines, one `lint: WARNING` line, then `lint: OK` |
+| 4 | `scripts/typecheck-ds.sh` | `typecheck: OK` |
+
+The 43 contrast pairs are 40 enforced plus 3 informational rows: the yellow edge against `canvas`,
+the same edge against a white screenshot, and the raised fill against `canvas`. Two of the 40 carry
+the label on a color block's call-to-action pill, which is why the table grew from 41 pairs: the
+pill is filled with the block's own ink (`DSBlock.ctaFill`) and labelled with that ink's counterpart
+(`DSBlock.ctaLabel`), so the pill against the block is the same pair as the block's copy and needed
+no row of its own. `DSBlock.focusRing` is the same ink at full strength and needs no row for the
+same reason (ADR-023).
+
+The guide renders both directions of that pill. `.btn--onblock` is the navy pill with a white label,
+which is what six of the seven blocks take; `.btn--onblock-inverted` is the white pill with a navy
+label, which `violet` takes, because `violet` is the one block whose ink is white. A block carries
+one filled action and no more: the second action is `.btn--onblock-text`, bare text in the block's
+ink. A filled secondary would be a shape, and a shape owes 3:1 against what it sits on, which on
+blocks means a row per fill rather than one row. `surfaceRaised` does not have those rows: it
+measures 2.16 against `lavender` and clears the bar on `violet` alone. Bare text is not a shape, so only its
+label is measured, and the label is the pair the block's own copy row already clears.
+
+`lint`'s three EXCEPTION lines cover `--grid-breakpoint`, `--motion-dur3` and
+`--motion-toast-visible` — variables the guide declares but has no way to consume, each allowlisted
+with a reason (ADR-022). They are the `DECLARATION_ONLY` entries printing themselves and their
+recorded reason on every run, rather than being tolerated in silence. The WARNING line stands while
+`DSIconCredits.entries` is empty, and it is a warning: it does not change the exit code. Both are
+expected output; the verdict is the last line.
+
+`lint` counts a variable as used by **exact name, outside comments**. It strips `<!-- ... -->` from
+the HTML first, then matches each name with a trailing-character guard and requires two occurrences,
+the declaration in the generated `:root` block plus at least one real use. So a variable named only
+inside an HTML comment counts as unused, and `--color-ink` is never satisfied by `--color-ink-muted`.
+The module docstring at the top of `scripts/ds_tokens.py` states the same three rules.
+
+## Notes
+
+**The parent folder name begins with a space.** Quote every path in every command and script.
+`ds_tokens.py` resolves its own paths relative to its file, so it is unaffected; a shell command
+that spells the path out is not.
+
+**Forager Bold Overlap is not licensed for the app yet.** The display face is Forager Bold Overlap
+(Mark Simonson Studio), and Adobe Fonts covers web and desktop use, not embedding in a mobile app.
+Until an app license exists the display roles fall back to Pretendard Bold at runtime. Forager
+Overlap has no cut heavier than Bold, so `DSFont.displayBold` and `DSFont.displayBlack` both resolve
+to `Forager-BoldOverlap` and the fallback is all-or-nothing: either the one face is bundled or
+`display`, `headline`, `title` and `stamp` all render Pretendard Bold. The probe behind that is
+`DSFont.availableDisplayNames`, a `Set` built by checking each PostScript name on its own, so the
+two identical names collapse instead of colliding and a later split of the family still falls back
+per cut. The guide loads the face from Typekit kit `blt4ith`, family `forager-overlap`, weights
+**400 and 700** — there is no heavier cut, so every display role is set at 700 on the web.
+
+Because Forager Overlap's strokes intentionally run into each other, the display roles are tracked
+**out**: `DSTextRole.tracking` returns 34 × 0.03, 28 × 0.03 and 24 × 0.03 pt for `display`,
+`headline` and `title`. `stamp` is the fourth display role, and it is tracked as a flat +2 pt
+rather than as a fraction of its size, because its size is not fixed: it is set uppercase at
+`DSTextRole.stampBaseSize` (32) and clamped at `stampMaxSize` (44). The Pretendard roles keep their
+own tracking.
+
+**Bump the guide's `?v=` when the Typekit kit changes.** Typekit serves kit CSS with `max-age=600`,
+so an edit to the kit does not reach the page for ten minutes. `design-system.html` loads
+`https://use.typekit.net/blt4ith.css?v=2`; raising that number is what makes a kit change visible.
+
+**The guide's Reduce Motion block excludes the deck on purpose.** The system substitutes two
+animations under Reduce Motion rather than deleting them, so the blanket
+`prefers-reduced-motion` rule in `design-system.html` skips `.deck__card` and its children through
+`:not(:where(...))`; without that carve-out the `.01ms !important` cut would replace the
+substitutions the demo exists to show. `revert-layer` is not a substitute for the exclusion: with no
+cascade layers declared it rolls back to the UA value of 0 s, the same instant cut.
+
+**The Noun Project icons are not downloaded yet.** `DSIconCredits.entries` is empty, so the credits
+screen reports that no third-party icons ship, and each icon renders its SF Symbol development
+fallback. Each icon's search query is listed in `UI_DESIGN.md` §8; adding an asset and adding its CC
+BY credit line belong in the same commit.
