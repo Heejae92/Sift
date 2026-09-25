@@ -66,6 +66,7 @@
 | 022 | The token script fails loudly; CSS-variable usage is counted exactly | 2026-09-24 | Active · corrected 2026-09-24 |
 | 023 | The CTA pill and the focus ring on a color block are the block's own ink | 2026-09-24 | Active · corrected 2026-09-24 |
 | 024 | The guide's reduce-motion cut excludes the deck, so the substitutions run | 2026-09-24 | Active |
+| 025 | Information architecture: a derived queue, four screens, four assumptions | 2026-09-24 | Proposed |
 | S-1 | Dark-first adaptive tokens | 2026-09-22 | Superseded by 006 |
 | S-2 | SF Pro Rounded system font | 2026-09-22 | Superseded by 003 |
 | S-3 | SF Symbols as the icon set | 2026-09-22 | Superseded by 017 |
@@ -1147,6 +1148,51 @@ which fixes the guide's format and its section list, not its behaviour.
 **Applies to** `design-system.html` (the `prefers-reduced-motion` block and the deck script),
 `DSMotion.snapBackReduced`, `DSMotion.crossFade`, `DSMotion.stampHoldReduced`,
 `DSMotion.gated(_:reduce:reduced:)`, ADR-019, ADR-020, P-15.
+
+---
+
+## ADR-025 · Information architecture: a derived queue, four screens, four assumptions
+
+**Context.** The design system documents four screens and their strings, but nothing said what the
+app is made of: which objects exist, which of their properties are the app's to write, how the
+screens nest, what happens at launch and on every return to the foreground, what persists, and how
+the app reacts to edits made in the Photos app. `docs/knowledge/IA.md` and `ia.html` now say all of
+that. Writing it forced four structural choices that no earlier entry settles, and one modelling
+choice that every screen depends on.
+
+**Options.** For the queue: (a) store a per-screenshot "reviewed" flag; (b) derive membership from
+the three destinations. For a heart set in Photos before the app existed: (a) count it as reviewed;
+(b) keep an app-side "seen" set so only app-set hearts are verdicts. For the archive: (a) the album
+is the truth, as `UI_DESIGN.md` §11.4 is written; (b) an app-local list is the truth and the album
+mirrors it. For the limited-access interstitial: every launch, or only when the selection changed.
+For the Credits screen: the Library footer, a header overflow menu on Review, or the Settings
+bundle.
+
+**Decision.** Queue (b): `unreviewed = not trashed, not archived, not favorited`, so the app owns no
+flag that could drift from what Photos shows, and every screen, route and side effect in `IA.md`
+follows from that one rule. The four remaining choices are taken as assumptions A1 to A4 in
+`IA.md` §10, pending the owner's confirmation:
+
+- **A1** a pre-existing heart counts as reviewed — the screenshot is a Favorite and never enters
+  the queue;
+- **A2** the limited interstitial shows on first grant and whenever the selected count differs
+  from the one last acknowledged, otherwise limited access goes straight to Review;
+- **A3** Credits is reached from the Library footer once access is granted;
+- **A4** the archive list is the truth and the album mirrors it: a deleted album is recreated, a
+  hand-removed member is un-archived, and an empty store adopts an existing album.
+
+**Consequences.** The app persists two lists (trash, archive), two scalars (the album identifier,
+the acknowledged selection count) and nothing else; the rewind entry lives in memory. Trash cannot
+survive a reinstall and does not need to: nothing was deleted from Photos, so the screenshots return
+to the queue. When A4 is confirmed, `UI_DESIGN.md` §11.4's "Archive lists members of the album"
+becomes "Archive lists the archive list; the album mirrors it", and ADR-010's fallback under
+limited access stops being a fallback — it is the normal path with the album write skipped. Until
+the owner confirms, this entry's status is **Proposed** and the diagrams are drawn as if all four
+assumptions hold. One question is recorded as open rather than assumed: whether the Review card
+offers pinch-to-zoom.
+
+**Applies to** `docs/knowledge/IA.md`, `ia.html`, ADR-008, ADR-010, ADR-011, ADR-014, ADR-015,
+`UI_DESIGN.md` §11.
 
 ---
 

@@ -13,12 +13,14 @@ derives the CSS variables, the WCAG contrast table and the name lint from it.
 |---|---|
 | `Sift/DesignSystem/*.swift` | The nine token files. The only place a value is typed |
 | `docs/knowledge/UI_DESIGN.md` | The design system: tokens, components, screens, the generated contrast table |
+| `docs/knowledge/IA.md` | The information architecture: objects, screens, navigation, routing, the queue lifecycle, persistence, external change. Proposed (ADR-025) |
 | `docs/knowledge/DESIGN_PRINCIPLES.md` | P-01 to P-23, the rules a review cites |
 | `docs/knowledge/PRINCIPLES_CHECKLIST.md` | 27 lines for the 23 principles (P-19 gets four, P-15 gets two), plus a pre-ship list for a screen |
-| `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-024, plus the superseded decisions S-1 to S-4 |
+| `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-025, plus the superseded decisions S-1 to S-4 |
 | `docs/superpowers/specs/2026-09-23-sift-design-system-design.md` | The design spec behind all of it |
 | `docs/references.md` | Reference boards, the format reference, three Lazyweb permission-screen links |
 | `design-system.html` | Single-file living style guide with a working swipe demo |
+| `ia.html` | The information architecture as diagrams: object model, screen map, launch routing, queue state machine |
 | `scripts/ds_tokens.py` | `contrast`, `emit-css`, `lint`. Standard library only |
 | `scripts/typecheck-ds.sh` | Type-checks the token files without an Xcode project |
 | `scripts/out/` | Generated output. Git-ignored; the copies that matter are pasted into the documents |
