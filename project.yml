@@ -1,0 +1,76 @@
+name: Sift
+options:
+  bundleIdPrefix: com.heejaeeo
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  xcodeVersion: "27.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: true
+
+schemes:
+  Sift:
+    build:
+      targets:
+        Sift: all
+        SiftTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [SiftTests]
+
+targets:
+  Sift:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sift
+        excludes:
+          # Finder/OneDrive duplicates ("Foo 2.swift") are not git-ignored from XcodeGen's point of view.
+          - "**/* [0-9].*"
+    info:
+      path: Sift/Info.plist
+      properties:
+        CFBundleDisplayName: Sift
+        CFBundleName: Sift
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        ITSAppUsesNonExemptEncryption: false
+        NSPhotoLibraryUsageDescription: "Sift shows your screenshots one at a time so you can trash, archive or favorite each one. Nothing leaves your phone."
+        UIAppFonts:
+          - Pretendard-Regular.otf
+          - Pretendard-Medium.otf
+          - Pretendard-SemiBold.otf
+          - Pretendard-Bold.otf
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.heejaeeo.sift
+        GENERATE_INFOPLIST_FILE: false
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+  SiftTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: SiftTests
+        excludes:
+          - "**/* [0-9].*"
+    dependencies:
+      - target: Sift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.heejaeeo.sift.tests
+        GENERATE_INFOPLIST_FILE: true
