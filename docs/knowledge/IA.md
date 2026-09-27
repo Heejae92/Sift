@@ -1,6 +1,6 @@
 # Sift · Information architecture
 
-v0.1 · 2026-09-24 · status: Proposed (ADR-025) · English
+v1.0 · 2026-09-27 · status: Active (ADR-025, the four assumptions confirmed by the owner on 2026-09-27) · English
 
 This file is the structure the screens hang on: what the app is made of, how the pieces are
 organised, how the user moves between them, and what the app does when Photos changes underneath
@@ -24,7 +24,7 @@ change it.
 - [7. Persistence](#7-persistence)
 - [8. External change](#8-external-change)
 - [9. System surfaces](#9-system-surfaces)
-- [10. Assumptions to confirm](#10-assumptions-to-confirm)
+- [10. Assumptions, confirmed](#10-assumptions-confirmed)
 - [11. Out of scope for v1](#11-out-of-scope-for-v1)
 
 ---
@@ -80,7 +80,7 @@ stores "this screenshot was reviewed"; the queue is derived:
    when the queue is empty.
 
 Consequences worth stating once: a screenshot the user hearted in Photos before ever opening the
-app is already a Favorite and never enters the queue (assumption A1, [§10](#10-assumptions-to-confirm));
+app is already a Favorite and never enters the queue (A1, [§10](#10-assumptions-confirmed));
 un-hearting it in Photos later puts it back in the queue by the same rule. The app owns no
 "reviewed" flag that could drift from what Photos shows.
 
@@ -150,7 +150,7 @@ Review
 ```
 
 The interstitial's "Sift these N" stores `N` as the acknowledged selection; "Pick more" opens the
-picker and re-evaluates when it closes (assumption A2).
+picker and re-evaluates when it closes (A2).
 
 ---
 
@@ -239,7 +239,7 @@ derived ([§1](#1-object-model)). No copy of the favorite flag. No session log, 
 **Recovery after reinstall.** The trash list is gone, and because nothing was deleted from Photos
 the trashed screenshots simply return to the queue. The archive list is gone too, but the album is
 not: on first launch with an empty store, if an album titled `Brand.archiveAlbumTitle` exists, the
-app adopts it and seeds the archive list from its members (assumption A4).
+app adopts it and seeds the archive list from its members (A4).
 
 **Mechanism.** Which store (a `Codable` file in Application Support, or SwiftData) is an
 architecture decision for the app phase. The IA only requires that the two lists and two scalars
@@ -260,8 +260,8 @@ need no special case; the table lists the ones that produce a visible effect.
 | A screenshot is hearted | leaves the queue; appears in Library › Favorites |
 | A heart is removed | returns to the queue unless it is in the trash or archive list |
 | A screenshot is removed from the archive album by hand | treated as un-archiving: the archive entry is dropped and the screenshot returns to the queue |
-| The archive album is deleted | the list is the truth: the album is recreated and repopulated on the next archive or launch (assumption A4) |
-| The limited selection changes | the interstitial shows on the next return to the foreground (assumption A2) |
+| The archive album is deleted | the list is the truth: the album is recreated and repopulated on the next archive or launch (A4) |
+| The limited selection changes | the interstitial shows on the next return to the foreground (A2) |
 | Authorization is revoked | Permission · denied; the stack is discarded |
 | Authorization is widened from limited to full | Review; the acknowledged selection count is cleared |
 
@@ -286,13 +286,13 @@ Favorite and album writes go through `performChanges` too but present nothing.
 
 ---
 
-## 10. Assumptions to confirm
+## 10. Assumptions, confirmed
 
-Structural choices this document had to make that no ADR settles. Each is written up as a rule
-above so the diagrams are complete; each is a one-line change if the owner decides otherwise.
-Recorded as ADR-025, status Proposed.
+Structural choices this document had to make that no earlier ADR settled. The owner confirmed all
+four on 2026-09-27; they are recorded as ADR-025, status Active. Each is written up as a rule above;
+the alternative each one displaced is kept here for the record.
 
-| # | Assumption | Where it bites | The alternative |
+| # | Decision | Where it bites | The alternative it displaced |
 |---|---|---|---|
 | A1 | A screenshot hearted in Photos before the app ever saw it counts as reviewed: it is a Favorite and never enters the queue | [§1](#1-object-model) rule 1; the queue is shorter on first launch | treat only app-set hearts as verdicts, which needs an app-side "seen" set and makes FAVE a no-op on an already-hearted card |
 | A2 | The limited interstitial shows on first grant and whenever the selected count differs from the one last acknowledged; otherwise limited access goes straight to Review | [§4](#4-launch-routing), [§8](#8-external-change) | show it on every launch under limited access |

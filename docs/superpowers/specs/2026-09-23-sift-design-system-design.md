@@ -409,8 +409,9 @@ Browser check of `design-system.html`, either by opening the file or by serving 
 
 **Limited photo access.** The screenshots smart album may return only the user's selected assets,
 and PhotoKit may refuse album creation or modification entirely under limited access. If it does,
-Archive falls back to an app-local list and Library must be able to render either source. To verify
-on a device in the app phase (ADR-010).
+only the album mirror is skipped: the app-local archive list is the truth on every path (ADR-025,
+A4, confirmed 2026-09-27). To verify on a device in the app phase whether the refusal happens at
+all (ADR-010).
 
 **The `deleteAssets` dialog.** It cannot be styled and cannot be suppressed, and the user can
 cancel it. Cancellation leaves Trash untouched and posts a "Not deleted" toast. Copy must not

@@ -648,9 +648,9 @@ pre.tree { background: var(--color-surface-raised); border-radius: var(--radius-
         <h1>One object, three piles, four screens.</h1>
         <p>A screenshot is the only thing the app is about. It ends up in the trash list, the archive list or Photos’ favorites; the queue is whatever is in none of them, newest first. Every screen, route and side effect on this page follows from that one rule. The written version is <code class="inline">docs/knowledge/IA.md</code>.</p>
         <div class="hero__pills">
-          <span>Proposed</span>
+          <span>Confirmed</span>
           <span>ADR-025</span>
-          <span>v0.1</span>
+          <span>v1.0</span>
         </div>
       </div>
     </header>
@@ -960,8 +960,8 @@ Review
 
       <section class="section" id="assume">
         <span class="section__num num">10</span>
-        <h2>Assumptions to confirm</h2>
-        <p class="section__lead">Structural choices this architecture had to make that no ADR settles. Each is written as a rule above so the diagrams are complete; each is a one-line change if decided otherwise. Recorded as ADR-025, status Proposed.</p>
+        <h2>Assumptions, confirmed</h2>
+        <p class="section__lead">Structural choices this architecture had to make that no earlier ADR settled. The owner confirmed all four on 2026-09-27; they are recorded as ADR-025, status Active. Each is a rule above; the alternative it displaced is kept for the record.</p>
 <div class="assume"><div class="card"><span class="k">A1</span><p class="t-subhead">A pre-existing heart counts as reviewed</p><p class="t-body">A screenshot hearted in Photos before the app ever saw it is a Favorite and never enters the queue. The alternative is an app-side “seen” set, which makes FAVE a no-op on an already-hearted card.</p></div><div class="card"><span class="k">A2</span><p class="t-subhead">The limited interstitial shows only when the selection changed</p><p class="t-body">On first grant, and whenever the selected count differs from the one last acknowledged; otherwise limited access goes straight to Review. The alternative is showing it on every launch.</p></div><div class="card"><span class="k">A3</span><p class="t-subhead">Credits lives in the Library footer</p><p class="t-body">Once access is granted the Permission footer is gone, so the Library footer carries the link. The alternatives are a header overflow menu on Review, or the Settings bundle.</p></div><div class="card"><span class="k">A4</span><p class="t-subhead">The archive list is the truth; the album mirrors it</p><p class="t-body">A deleted album is recreated, a hand-removed member is un-archived, an empty store adopts an existing album. The alternative, the album as truth, loses every archive verdict if the user deletes the album.</p></div></div>
         <div class="note" style="margin-top:var(--space-s4)"><strong>Open, not assumed.</strong> Whether the Review card offers pinch-to-zoom. The design system gives zoom to the Viewer only; the card is the screenshot at card size.</div>
       </section>
@@ -977,7 +977,7 @@ Review
 
     </div>
     <footer class="footer">
-      <p>Information architecture v0.1, proposed. Diagrams and tables follow <code class="inline">docs/knowledge/IA.md</code>; the page is styled from the same tokens as <code class="inline">design-system.html</code>.</p>
+      <p>Information architecture v1.0, confirmed 2026-09-27. Diagrams and tables follow <code class="inline">docs/knowledge/IA.md</code>; the page is styled from the same tokens as <code class="inline">design-system.html</code>.</p>
     </footer>
   </main>
 </div>

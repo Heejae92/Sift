@@ -13,7 +13,7 @@ derives the CSS variables, the WCAG contrast table and the name lint from it.
 |---|---|
 | `Sift/DesignSystem/*.swift` | The nine token files. The only place a value is typed |
 | `docs/knowledge/UI_DESIGN.md` | The design system: tokens, components, screens, the generated contrast table |
-| `docs/knowledge/IA.md` | The information architecture: objects, screens, navigation, routing, the queue lifecycle, persistence, external change. Proposed (ADR-025) |
+| `docs/knowledge/IA.md` | The information architecture: objects, screens, navigation, routing, the queue lifecycle, persistence, external change. ADR-025, confirmed 2026-09-27 |
 | `docs/knowledge/DESIGN_PRINCIPLES.md` | P-01 to P-23, the rules a review cites |
 | `docs/knowledge/PRINCIPLES_CHECKLIST.md` | 27 lines for the 23 principles (P-19 gets four, P-15 gets two), plus a pre-ship list for a screen |
 | `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-025, plus the superseded decisions S-1 to S-4 |

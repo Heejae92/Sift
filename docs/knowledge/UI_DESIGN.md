@@ -1489,8 +1489,8 @@ toast `"Not deleted"`. A partial failure shows an inline line: `"Couldn't delete
 | Empty (Favorites) | `EmptyState` on `DSBlock.favoritesEmpty` | — | `"No faves yet. Swipe up on the good ones."` |
 | Empty (Archive) | `EmptyState` on `DSBlock.archiveEmpty` | — | `"Nothing archived. Swipe right to stash keepers."` |
 
-Favorites lists screenshots with `isFavorite` set; Archive lists members of the
-`Brand.archiveAlbumTitle` album. An asset can be in both and then appears in both. Moving an asset
+Favorites lists screenshots with `isFavorite` set; Archive lists the app's archive list, which the
+`Brand.archiveAlbumTitle` album mirrors (ADR-025, A4). An asset can be in both and then appears in both. Moving an asset
 from one segment to the other sets the destination and clears the source. Trashing from the viewer
 needs no confirmation (rung 0 below) and fires `DSHaptic.trash`.
 
@@ -1847,9 +1847,10 @@ the expressive palette to serve as blocks, `onboarding` on `trash.main` and `lim
 ([§1 Usage rules](#usage-rules)).
 
 1. **Album writes under limited access.** PhotoKit may refuse to create or modify the
-   `Brand.archiveAlbumTitle` album when access is limited. If it does, Archive falls back to an
-   app-local list and Library must render either source. To verify on a device during the app
-   phase (ADR-010).
+   `Brand.archiveAlbumTitle` album when access is limited. If it does, only the mirror write is
+   skipped: the archive list is the truth on every path (ADR-025, A4) and the album catches up when
+   access widens. What to verify on a device during the app phase is only whether the refusal
+   happens at all (ADR-010, Correction of 2026-09-27).
 2. **FAVE or FAVORITE on the stamp.** "FAVE" fits at stamp size and matches the playful voice, but
    it is slang and may not localize. Current proposal, and what is implemented: FAVE on the stamp,
    "Favorite" in the caption and in VoiceOver. Revisit when a second language is added.

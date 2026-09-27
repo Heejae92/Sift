@@ -66,7 +66,7 @@
 | 022 | The token script fails loudly; CSS-variable usage is counted exactly | 2026-09-24 | Active · corrected 2026-09-24 |
 | 023 | The CTA pill and the focus ring on a color block are the block's own ink | 2026-09-24 | Active · corrected 2026-09-24 |
 | 024 | The guide's reduce-motion cut excludes the deck, so the substitutions run | 2026-09-24 | Active |
-| 025 | Information architecture: a derived queue, four screens, four assumptions | 2026-09-24 | Proposed |
+| 025 | Information architecture: a derived queue, four screens, four assumptions | 2026-09-27 | Active |
 | S-1 | Dark-first adaptive tokens | 2026-09-22 | Superseded by 006 |
 | S-2 | SF Pro Rounded system font | 2026-09-22 | Superseded by 003 |
 | S-3 | SF Symbols as the icon set | 2026-09-22 | Superseded by 017 |
@@ -619,6 +619,13 @@ interstitial ("You picked 14 screenshots. Sift only sees those.") with "Pick mor
 (`presentLimitedLibraryPicker`) and "Sift these 14". Denied gets "Open Settings". If PhotoKit
 refuses album writes under limited access, Archive falls back to an app-local list and Library
 renders either source. To verify on device in the app phase.
+
+**Correction, 2026-09-27.** The Decision above calls the app-local list a fallback that exists only
+when PhotoKit refuses the album write. Since ADR-025 (A4, confirmed by the owner on 2026-09-27) the
+list is the truth on every path and the album is its mirror. Under limited access nothing falls
+back: the verdict is recorded in the list as always, only the mirror write is skipped, and the album
+catches up when access widens. Library renders the list, never the album. What still needs a
+device check is only whether the mirror write is refused at all.
 
 ## ADR-011 · Navigation by header icon buttons, no tab bar
 
@@ -1190,6 +1197,12 @@ limited access stops being a fallback — it is the normal path with the album w
 the owner confirms, this entry's status is **Proposed** and the diagrams are drawn as if all four
 assumptions hold. One question is recorded as open rather than assumed: whether the Review card
 offers pinch-to-zoom.
+
+**Confirmed, 2026-09-27.** The owner confirmed A1 to A4 as written ("가정 네 개 다 그대로 가자").
+Status is **Active**. The conditional consequence is now in force: `UI_DESIGN.md` §11.4 reads
+"Archive lists the app's archive list; the album mirrors it", `IA.md` §10 is retitled to record
+the decisions rather than propose them, and ADR-010 carries a dated Correction making the list
+the normal path. The pinch-to-zoom question stays open.
 
 **Applies to** `docs/knowledge/IA.md`, `ia.html`, ADR-008, ADR-010, ADR-011, ADR-014, ADR-015,
 `UI_DESIGN.md` §11.
