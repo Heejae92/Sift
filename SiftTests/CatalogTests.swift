@@ -152,6 +152,34 @@ struct CatalogTests {
         #expect(catalog.limitedSelectionChanged)
     }
 
+    /// ADR-010: the access prompt comes from the tap on the Permission screen, never from launch.
+    /// Registering a PhotoKit change observer prompts while access is undetermined, so the catalog
+    /// must not open its change stream until access is usable, and must open it exactly once after.
+    @Test func observingWaitsForUsableAccess() async {
+        let (catalog, library, _) = make(shots: Fixtures.shots(2), status: .notDetermined)
+        await catalog.load()
+        catalog.startObserving()  // an explicit call is a no-op too
+        for _ in 0..<20 { await Task.yield() }
+        #expect(await library.changeStreamCount == 0)
+        #expect(catalog.isLoaded && !catalog.authorization.isUsable)
+
+        await catalog.requestAuthorization()  // the fake grants on request
+        #expect(catalog.authorization == .authorized)
+        var tries = 0
+        while await library.changeStreamCount == 0, tries < 200 { await Task.yield(); tries += 1 }
+        #expect(await library.changeStreamCount == 1)
+
+        await catalog.refreshAuthorization()  // idempotent: no second stream
+        for _ in 0..<20 { await Task.yield() }
+        #expect(await library.changeStreamCount == 1)
+
+        await library.remove("s1")  // and the stream is live: an external change refreshes
+        await library.emitChange()
+        tries = 0
+        while catalog.screenshots.count == 2, tries < 200 { await Task.yield(); tries += 1 }
+        #expect(catalog.screenshots.count == 1)
+    }
+
     @Test func externalDeleteDropsFromEveryList() async {
         let (catalog, library, _) = make(shots: Fixtures.shots(2))
         await catalog.load()

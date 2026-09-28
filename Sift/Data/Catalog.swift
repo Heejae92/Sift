@@ -66,6 +66,7 @@ final class Catalog {
         if authorization.isUsable {
             await refresh()
             await adoptArchiveAlbumIfNeeded()
+            startObserving()
         }
         isLoaded = true
     }
@@ -76,6 +77,7 @@ final class Catalog {
             await refresh()
             await adoptArchiveAlbumIfNeeded()
             if authorization == .authorized { state.acknowledgedSelectionCount = nil; persist() }
+            startObserving()
         }
         isLoaded = true
     }
@@ -89,6 +91,7 @@ final class Catalog {
             if before == .limited, authorization == .authorized {
                 state.acknowledgedSelectionCount = nil; persist()
             }
+            startObserving()
         }
     }
 
@@ -99,8 +102,12 @@ final class Catalog {
     }
 
     /// Subscribe to Photos changes for the life of the app. Idempotent.
+    /// Registers for library changes. Runs only once access is usable: `PHPhotoLibrary.register(_:)`
+    /// prompts for access while the status is undetermined, and ADR-010 requires the prompt to come
+    /// from the tap on the Permission screen, never from launch. The lifecycle methods call this
+    /// themselves the moment access becomes usable; it is idempotent.
     func startObserving() {
-        guard changeTask == nil else { return }
+        guard authorization.isUsable, changeTask == nil else { return }
         let stream = library.changes()
         changeTask = Task { [weak self] in
             for await _ in stream {

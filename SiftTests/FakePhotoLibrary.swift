@@ -58,7 +58,10 @@ actor FakePhotoLibrary: PhotoLibrary {
             Task { await self.register(continuation) }
         }
     }
-    private func register(_ c: AsyncStream<Void>.Continuation) { continuations.append(c) }
+    /// How many change streams the catalog has opened. Registering with PhotoKit is what prompts
+    /// for access while it is undetermined, so tests assert this stays 0 until access is usable.
+    private(set) var changeStreamCount = 0
+    private func register(_ c: AsyncStream<Void>.Continuation) { continuations.append(c); changeStreamCount += 1 }
 
     func setFavorite(_ id: String, _ value: Bool) async throws {
         favoriteWrites.append((id, value))

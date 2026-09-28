@@ -132,7 +132,7 @@ the test fake (`actor FakePhotoLibrary`) are interchangeable:
 |---|---|---|
 | `authorizationStatus()` / `requestAuthorization()` | `PHPhotoLibrary.authorizationStatus(for: .readWrite)` / `requestAuthorization(for:)` | requested on tap only (ADR-010) |
 | `fetchScreenshots()` | `PHAsset.fetchAssets(with: .image)` filtered by `mediaSubtypes & photoScreenshot`, sorted by `creationDate` desc | the predicate form works under limited access, where smart albums are unreliable |
-| `changes()` | `PHPhotoLibraryChangeObserver` → `AsyncStream<Void>` | the observer is a `Sendable` NSObject; the catalog re-fetches on every yield |
+| `changes()` | `PHPhotoLibraryChangeObserver` → `AsyncStream<Void>` | the observer is a `Sendable` NSObject; the catalog re-fetches on every yield. Opened only once access is usable: registering with PhotoKit prompts while access is undetermined, and ADR-010 puts the prompt on the Permission tap, never on launch |
 | `setFavorite(_:_:)` | `PHAssetChangeRequest(for:).isFavorite` | no system dialog |
 | `ensureArchiveAlbum(existingID:title:)` | fetch by id, then by title, else `creationRequestForAssetCollection` | returns the album `localIdentifier` |
 | `albumMembers(albumID:)` / `addToAlbum` / `removeFromAlbum` | `PHAssetCollectionChangeRequest` | the mirror; failures under limited access are swallowed into `PhotoLibraryError.albumWriteRefused` and the list stays the truth |
@@ -180,7 +180,9 @@ later schema can migrate instead of guess.
 - Mutations go through `PHPhotoLibrary.shared().performChanges { }` with only `String` identifiers
   captured; assets are re-fetched inside the block.
 - The change observer is a `Sendable` `NSObject` that yields into an `AsyncStream`; the catalog
-  consumes the stream on the main actor.
+  consumes the stream on the main actor. `Catalog.startObserving()` is idempotent and guarded on
+  `authorization.isUsable`; `load()`, `requestAuthorization()` and `refreshAuthorization()` call it
+  themselves the moment access becomes usable, so no view decides when observing starts.
 - No `DispatchQueue`, no `NotificationCenter` for app state, no `@unchecked Sendable` outside the
   one image-request continuation guard.
 

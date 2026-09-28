@@ -29,8 +29,7 @@ struct RootView: View {
         }
         .background(DSColor.canvas.ignoresSafeArea())
         .task {
-            await catalog.load()
-            catalog.startObserving()
+            await catalog.load()  // observing starts inside, once access is usable (ADR-010)
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active, catalog.isLoaded else { return }
