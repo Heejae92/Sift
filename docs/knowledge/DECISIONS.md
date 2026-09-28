@@ -70,6 +70,8 @@
 | 026 | App stack: Swift 6 strict concurrency, SwiftUI with Observation, XcodeGen, a JSON store, no dependencies | 2026-09-27 | Active |
 | 027 | A DEBUG launch argument reviews every image, because a simulator cannot make screenshots | 2026-09-27 | Active |
 | 028 | Six documented values become tokens; `DSOpacity` joins the layout file | 2026-09-27 | Active |
+| 029 | The all-done burst is the three verdict glyphs in the block's ink | 2026-09-27 | Active · owner has not seen it |
+| 030 | Viewer tokens: `viewerBackdrop`, a double-tap scale and a pinch ceiling | 2026-09-27 | Active · ceiling is an assumption |
 | S-1 | Dark-first adaptive tokens | 2026-09-22 | Superseded by 006 |
 | S-2 | SF Pro Rounded system font | 2026-09-22 | Superseded by 003 |
 | S-3 | SF Symbols as the icon set | 2026-09-22 | Superseded by 017 |
@@ -1301,6 +1303,39 @@ value without a token is a design-system defect, fixed at the source and never t
 
 **Applies to** `DSLayout.swift`, `DSMotion.swift`, `scripts/ds_tokens.py`, `design-system.html`,
 `UI_DESIGN.md` §4, §6, §10; P-12.
+
+---
+
+## ADR-029 · The all-done burst is the three verdict glyphs in the block's ink
+
+**Decision.** `UI_DESIGN.md` §11.2 asks for a confetti burst on all-done, `DSMotion.confetti` long and
+gated on Reduce Motion, and says nothing about what the confetti is made of. P-06 confines the verdict
+colors to four places and the expressive palette to full-bleed blocks, so colored dots were out. The
+burst is the three verdict glyphs (trash, archive, heart) at `DSSize.stampIcon` in `DSBlock.allDone.ink`,
+each flying from the centre along its own swipe axis (left, right, up) to the edge of the region and
+fading, on `DSMotion.throwOut(duration: DSMotion.confetti)`. It plays once per queue completion and
+not at all under Reduce Motion. The owner has not seen it: this is the implementer's reading of §11.2
+within P-06, recorded so it can be judged and changed rather than rediscovered.
+
+**Applies to** `Sift/Features/Review/ReviewScreen.swift` (`AllDoneBurst`), `DSMotion.confetti`, P-06,
+P-15, `UI_DESIGN.md` §11.2.
+
+---
+
+## ADR-030 · Viewer tokens: `viewerBackdrop`, a double-tap scale and a pinch ceiling
+
+**Decision.** The viewer build found three more values the documents state or imply but no token
+carried: the full-screen black (P-07 names it as the one place pure black appears; `DSColor` had no
+black), the double-tap zoom of 2× (§10), and a ceiling for the pinch (§10 said "pinch to zoom" and
+no more). They are `DSColor.viewerBackdrop`, `DSSize.viewerZoomDoubleTap` (2) and `DSSize.viewerZoomMax`
+(4). The ceiling is the implementer's value, not the owner's: 4× shows a phone screenshot's text at
+roughly print size and stops before the image turns to blocks. The contrast pair for `onImage` now
+names `viewerBackdrop` instead of a literal black. Both zoom variables join `DECLARATION_ONLY`: the
+guide's viewer is a static swatch. Same rule as ADR-028: a documented value without a token is fixed
+at the source, never typed in a view.
+
+**Applies to** `DSColor.swift`, `DSLayout.swift`, `scripts/ds_tokens.py`, `design-system.html`,
+`UI_DESIGN.md` §1, §4, §10, §14, `Sift/Features/Viewer/AssetViewer.swift`; P-07, P-12.
 
 ---
 

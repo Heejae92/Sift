@@ -56,8 +56,9 @@ Sift/                              app target sources (XcodeGen `sources: [Sift]
     SystemUI.swift                 open Settings · present the limited-library picker
   Features/                        one folder per screen, screen = view + model
     Permission/                    PermissionScreen · SwipeLegend · DemoStack · LimitedInterstitial · DeniedView
-    Review/                        ReviewScreen · ReviewModel (deck state machine) · SwipeGeometry
-                                   CardStack · ScreenshotCard · VerdictStamp · VerdictButtonRow · RewindButton · ProgressCounter
+    Review/                        ReviewScreen (+ AllDoneBurst) · ReviewModel (deck state machine) · SwipeGeometry
+                                   CardStack (+ DeckMotion, CardPose, CardSkeleton) · ScreenshotCard · VerdictStamp
+                                   VerdictButtonRow (+ VerdictCaption) · RewindButton · ProgressCounter
     Trash/                         TrashScreen · TrashModel · PurgeAllSheet
     Library/                       LibraryScreen · LibraryModel · SegmentedControl
     Viewer/                        AssetViewer (two action sets, chosen by the presenting screen)
@@ -149,10 +150,13 @@ Each screen has a thin model that reads the catalog and owns only screen-local s
 
 - `ReviewModel` — the state machine of IA §5. `Phase` is an enum with every case designed:
   `loading`, `reviewing`, `dragging`, `exiting(Verdict)`, `promoting`, `rewinding`, `allDone`,
-  `noScreenshots`. It pins the front card: `deck` is recomputed from `catalog.queue` only when the
-  phase allows it. `commit(_:exitDuration:)` runs the exit, sleeps `DSSwipe.promoteAt × duration`,
-  then applies the side effect and promotes; `rewind()` replays the recorded entry. The sleep is
-  injected so tests run without waiting.
+  `noScreenshots`. The front card is stable (IA §5): `deck` is recomputed from `catalog.queue` on
+  every change, but while reviewing the current front stays in front and a newcomer joins behind it;
+  only a verdict, a rewind or the card's own disappearance changes it. `commit(_:exitDuration:)` runs
+  the exit, sleeps `DSSwipe.promoteAt × duration`, then applies the side effect and promotes;
+  `rewind()` replays the recorded entry, and `catalogDidChange()` drops that entry when its verdict
+  no longer stands (restored in Trash, purged, un-hearted in Photos). The sleep is injected so tests
+  run without waiting.
 - `SwipeGeometry` — pure functions for the gesture: sector from `(dx, dy)` with hysteresis, the
   commit rule (distance or velocity with a travel floor), rotation, stamp opacity, all read from
   `DSSwipe`. Tested on their own.

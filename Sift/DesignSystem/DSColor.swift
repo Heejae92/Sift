@@ -41,6 +41,9 @@ enum DSColor {
     static let onToast  = oklch(1, 0, 0)
     /// Text/icons on the viewer's black bars only.
     static let onImage  = oklch(1, 0, 0)
+    /// The viewer's full-screen backdrop: the one place pure black appears (P-07). Letterboxing a
+    /// screenshot on white would tint it. `onImage` sits on it at 21.00.
+    static let viewerBackdrop = oklch(0, 0, 0)
 
     // MARK: - Accent (monochrome — saturation is reserved for verdicts and blocks, ADR-005)
     /// Primary button fill = ink. On a color block the CTA is NOT a free choice between this and a

@@ -26,6 +26,7 @@
   --color-ink-muted: #656571;
   --color-on-toast: #ffffff;
   --color-on-image: #ffffff;
+  --color-viewer-backdrop: #000000;
   --color-accent: #1f1e38;
   --color-on-accent: #ffffff;
   --color-focus: rgb(31 30 56 / 0.60);
@@ -79,6 +80,8 @@
   --size-icon-inline: 20px;
   --size-stamp-icon: 24px;
   --size-stamp-fave-raise: 0.12;
+  --size-viewer-zoom-double-tap: 2;
+  --size-viewer-zoom-max: 4;
   --size-focus-ring: 3px;
   --size-grid-columns: 3;
   --size-stack-depth: 3;
@@ -111,6 +114,7 @@
   --motion-stagger: 0.02s;
   --motion-stamp-pop-scale: 1.15;
 }
+
 
 
 
@@ -519,7 +523,7 @@ code.inline { font-family: ui-monospace, Menlo, monospace; font-size: 0.86em; ba
 .mini__face { font: var(--t-display); font-size: 44px; line-height: 1.02; letter-spacing: 0.03em; text-align: center; }
 .mini__stack { position: relative; flex: 1 1 auto; margin: var(--space-s2) 0; }
 .mini__stack > div { position: absolute; inset: 0; border-radius: var(--radius-lg); background: var(--color-surface-raised); box-shadow: var(--shadow-1); }
-.mini__viewer { position: absolute; inset: 0; background: #000; color: var(--color-on-image); display: flex; flex-direction: column; justify-content: space-between; padding: var(--space-s3); }
+.mini__viewer { position: absolute; inset: 0; background: var(--color-viewer-backdrop); color: var(--color-on-image); display: flex; flex-direction: column; justify-content: space-between; padding: var(--space-s3); }
 .screen-cap { font: var(--t-label-sm); margin-top: var(--space-s2); }
 .screen-cap small { display: block; font-weight: 500; color: var(--color-ink2); }
 
@@ -731,7 +735,7 @@ code.inline { font-family: ui-monospace, Menlo, monospace; font-size: 0.86em; ba
           <div class="ramp__cell"><div class="ramp__color" style="background:var(--color-ink2);color:var(--color-on-accent)">ink2</div><div class="swatch__meta"><span class="role">Secondary text, captions</span><code>#535366 &middot; 7.49 on white</code></div></div>
           <div class="ramp__cell"><div class="ramp__color" style="background:var(--color-ink-muted);color:var(--color-on-accent)">inkMuted</div><div class="swatch__meta"><span class="role">Placeholder, disabled meta</span><code>#656571 &middot; 5.77 on white</code></div></div>
           <div class="ramp__cell"><div class="ramp__color" style="background:var(--color-toast);color:var(--color-on-toast)">onToast</div><div class="swatch__meta"><span class="role">Text on the toast capsule</span><code>#ffffff &middot; 16.16 on toast</code></div></div>
-          <div class="ramp__cell"><div class="ramp__color" style="background:#000;color:var(--color-on-image)">onImage</div><div class="swatch__meta"><span class="role">Text on the viewer's black bars</span><code>#ffffff &middot; 21.00 on black</code></div></div>
+          <div class="ramp__cell"><div class="ramp__color" style="background:var(--color-viewer-backdrop);color:var(--color-on-image)">onImage</div><div class="swatch__meta"><span class="role">Text on the viewer's black bars</span><code>#ffffff &middot; 21.00 on black</code></div></div>
         </div>
 
         <p class="subhead">Surfaces and accent</p>
@@ -740,7 +744,7 @@ code.inline { font-family: ui-monospace, Menlo, monospace; font-size: 0.86em; ba
           <div class="ramp__cell"><div class="ramp__color" style="background:var(--color-surface);color:var(--color-ink);box-shadow:var(--shadow-1)">surface</div><div class="swatch__meta"><span class="role">Cards, sheets, letterbox</span><code>#ffffff</code></div></div>
           <div class="ramp__cell"><div class="ramp__color" style="background:var(--color-surface-raised);color:var(--color-ink)">surfaceRaised</div><div class="swatch__meta"><span class="role">Secondary button, list rows</span><code>#e9e9e9</code></div></div>
           <div class="ramp__cell"><div class="ramp__color" style="background:var(--color-toast);color:var(--color-on-toast)">toast</div><div class="swatch__meta"><span class="role">Toast capsule = navy ink</span><code>#1f1e38</code></div></div>
-          <div class="ramp__cell"><div class="ramp__color" style="background:#000"><span style="background:var(--color-chip);color:var(--color-ink);border-radius:var(--radius-pill);padding:4px 12px;font:var(--t-label-sm)">chip</span></div><div class="swatch__meta"><span class="role">Date chip over a screenshot</span><code>white &alpha; .90 &middot; 12.89 over black</code></div></div>
+          <div class="ramp__cell"><div class="ramp__color" style="background:var(--color-viewer-backdrop)"><span style="background:var(--color-chip);color:var(--color-ink);border-radius:var(--radius-pill);padding:4px 12px;font:var(--t-label-sm)">chip</span></div><div class="swatch__meta"><span class="role">Date chip over a screenshot</span><code>white &alpha; .90 &middot; 12.89 over black</code></div></div>
         </div>
         <div class="grid-cards cols-3" style="margin-top:var(--space-s4)">
           <div class="card" style="background:var(--color-accent);color:var(--color-on-accent)">
@@ -784,7 +788,7 @@ code.inline { font-family: ui-monospace, Menlo, monospace; font-size: 0.86em; ba
             <tr><td class="n">9</td><td><code>inkMuted</code></td><td><code>surfaceRaised</code></td><td>text</td><td class="n">4.5</td><td class="n">4.77</td><td class="pass">PASS</td></tr>
             <tr><td class="n">10</td><td><code>onToast</code></td><td><code>toast</code></td><td>text</td><td class="n">4.5</td><td class="n">16.16</td><td class="pass">PASS</td></tr>
             <tr><td class="n">11</td><td><code>onAccent</code></td><td><code>accent</code></td><td>text &middot; primary button label</td><td class="n">4.5</td><td class="n">16.16</td><td class="pass">PASS</td></tr>
-            <tr><td class="n">12</td><td><code>onImage</code></td><td><code>black</code></td><td>text &middot; viewer bars</td><td class="n">4.5</td><td class="n">21.00</td><td class="pass">PASS</td></tr>
+            <tr><td class="n">12</td><td><code>onImage</code></td><td><code>viewerBackdrop</code></td><td>text &middot; viewer bars</td><td class="n">4.5</td><td class="n">21.00</td><td class="pass">PASS</td></tr>
             <tr><td class="n">13</td><td><code>ink</code></td><td><code>chip over white</code></td><td>text &middot; chip over a white screenshot</td><td class="n">4.5</td><td class="n">16.16</td><td class="pass">PASS</td></tr>
             <tr><td class="n">14</td><td><code>ink</code></td><td><code>chip over black</code></td><td>text &middot; chip over a black screenshot</td><td class="n">4.5</td><td class="n">12.89</td><td class="pass">PASS</td></tr>
             <tr><td class="n">15</td><td><code>ink</code></td><td><code>surfaceRaised</code></td><td>non-text &middot; secondary button glyph</td><td class="n">3</td><td class="n">13.35</td><td class="pass">PASS</td></tr>
@@ -1236,7 +1240,7 @@ code.inline { font-family: ui-monospace, Menlo, monospace; font-size: 0.86em; ba
           </div>
         </div>
 
-        <div class="card" style="margin-top:var(--space-s5);background:#000;color:var(--color-on-image);display:flex;align-items:center;justify-content:space-between;gap:var(--space-s4);flex-wrap:wrap">
+        <div class="card" style="margin-top:var(--space-s5);background:var(--color-viewer-backdrop);color:var(--color-on-image);display:flex;align-items:center;justify-content:space-between;gap:var(--space-s4);flex-wrap:wrap">
           <span style="display:inline-flex;align-items:center;gap:var(--space-s3)"><svg width="20" height="20" aria-hidden="true"><use href="#i-close"/></svg><span class="t-label-sm num">Sep 21 &middot; 2:14 PM &middot; 1.2 MB</span></span>
           <span class="t-caption">The viewer is the one place the canvas goes black — letterboxing a screenshot on white would tint it. Bars carry <code class="inline" style="background:rgb(255 255 255 / .16);color:var(--color-on-image)">onImage</code> text.</span>
           <span style="display:inline-flex;gap:var(--space-s3)"><span class="t-label-sm">Move to Archive</span><span class="t-label-sm">Trash</span></span>

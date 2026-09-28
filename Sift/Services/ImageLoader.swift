@@ -16,10 +16,7 @@ final class ImageLoader {
 
     func image(for id: String, targetSize: CGSize, contentMode: PHImageContentMode = .aspectFit) async -> UIImage? {
         guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject else { return nil }
-        let options = PHImageRequestOptions()
-        options.deliveryMode = .highQualityFormat
-        options.isNetworkAccessAllowed = true
-        options.resizeMode = .fast
+        let options = Self.requestOptions()
         let guardBox = ResumeGuard()
         return await withCheckedContinuation { continuation in
             manager.requestImage(for: asset, targetSize: targetSize, contentMode: contentMode, options: options) { image, _ in
@@ -32,16 +29,27 @@ final class ImageLoader {
     func startCaching(ids: [String], targetSize: CGSize, contentMode: PHImageContentMode = .aspectFill) {
         let assets = Self.assets(ids)
         guard !assets.isEmpty else { return }
-        manager.startCachingImages(for: assets, targetSize: targetSize, contentMode: contentMode, options: nil)
+        manager.startCachingImages(for: assets, targetSize: targetSize, contentMode: contentMode, options: Self.requestOptions())
     }
 
     func stopCaching(ids: [String], targetSize: CGSize, contentMode: PHImageContentMode = .aspectFill) {
         let assets = Self.assets(ids)
         guard !assets.isEmpty else { return }
-        manager.stopCachingImages(for: assets, targetSize: targetSize, contentMode: contentMode, options: nil)
+        manager.stopCachingImages(for: assets, targetSize: targetSize, contentMode: contentMode, options: Self.requestOptions())
     }
 
     func stopCachingAll() { manager.stopCachingImagesForAllAssets() }
+
+    /// One options object for requests and for caching: `PHCachingImageManager` serves a cached image
+    /// only when target size, content mode and options all match, so prefetching with different
+    /// options would warm a cache the request can never hit.
+    private static func requestOptions() -> PHImageRequestOptions {
+        let options = PHImageRequestOptions()
+        options.deliveryMode = .highQualityFormat
+        options.isNetworkAccessAllowed = true
+        options.resizeMode = .fast
+        return options
+    }
 
     private static func assets(_ ids: [String]) -> [PHAsset] {
         var out: [PHAsset] = []

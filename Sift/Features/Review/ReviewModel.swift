@@ -61,7 +61,12 @@ final class ReviewModel {
             deck = [front] + Array(rest.prefix(DSSize.stackDepth - 1))
         case .loading, .reviewing, .allDone, .noScreenshots:
             var ordered = queue
-            if let pinned = pinnedFrontID, let index = ordered.firstIndex(where: { $0.id == pinned }), index != 0 {
+            // IA §5: a newcomer joins by date but behind the front card, never under the thumb. The
+            // front card changes only through a verdict, a rewind or its own disappearance, so while
+            // reviewing the current front stays in front; `pinnedFrontID` carries the same rule
+            // across a drag and a landing.
+            let stableFront = pinnedFrontID ?? (phase == .reviewing ? deck.first?.id : nil)
+            if let pinned = stableFront, let index = ordered.firstIndex(where: { $0.id == pinned }), index != 0 {
                 ordered.insert(ordered.remove(at: index), at: 0)
             }
             deck = Array(ordered.prefix(DSSize.stackDepth))
@@ -135,7 +140,25 @@ final class ReviewModel {
     }
 
     /// Called when the catalog changes underneath the deck; safe in any phase.
-    func catalogDidChange() { sync() }
+    func catalogDidChange() {
+        invalidateStaleRewind()
+        sync()
+    }
+
+    /// IA §5 "invalidation": the rewind entry is dropped once its verdict no longer stands — the
+    /// screenshot was restored, moved, purged or deleted elsewhere — so Rewind never reverses a
+    /// state that has already changed under it.
+    private func invalidateStaleRewind() {
+        guard let entry = rewindEntry else { return }
+        guard let shot = catalog.screenshot(entry.id) else { rewindEntry = nil; return }
+        let stillHolds: Bool
+        switch entry.verdict {
+        case .trash: stillHolds = catalog.state.isTrashed(entry.id)
+        case .archive: stillHolds = entry.wasArchived || catalog.state.isArchived(entry.id)
+        case .fave: stillHolds = entry.wasFavorite || shot.isFavorite
+        }
+        if !stillHolds { rewindEntry = nil }
+    }
 }
 
 extension Verdict {

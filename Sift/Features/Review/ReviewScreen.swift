@@ -1,110 +1,260 @@
 import SwiftUI
 
-/// Phase-B placeholder: counter, a flat front card, the three verdict buttons and rewind.
+/// UI_DESIGN §11.2 "Review", the root of the stack (IA §3).
+///
+/// - Header: `ProgressCounter` leading; Trash, with its count badge, and Library trailing, each
+///   pushing its route onto `path`.
+/// - Body: the `CardStack`.
+/// - Bottom: `VerdictButtonRow` centred with `RewindButton` pinned leading, docked in a
+///   `safeAreaInset`.
+/// - `allDone` and `noScreenshots` are `EmptyState` blocks. They run full-bleed under the header and
+///   the dock, which take the block's ink. Rewind stays available in `allDone`, and reaching it plays
+///   the `DSMotion.confetti` burst unless Reduce Motion is on.
 struct ReviewScreen: View {
     @Environment(Catalog.self) private var catalog
-    @Environment(ImageLoader.self) private var images
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var path: [Route]
     @State private var model: ReviewModel?
+    @State private var motion = DeckMotion()
 
     var body: some View {
-        Group {
+        ZStack {
+            if let emptyState {
+                EmptyState(emptyState) { path.append(.trash) }
+                    .transition(.opacity)
+            }
+            if let burst {
+                AllDoneBurst(ink: DSBlock.allDone.ink)
+                    .id(burst)
+                    .transition(.identity)
+            }
             if let model {
-                content(model)
+                CardStack(model: model, motion: motion, position: "\(model.position) of \(model.total)")
             } else {
-                DSColor.canvas
+                CardSkeleton()
             }
         }
-        .task {
+        .animation(stateChange, value: block)
+        .safeAreaInset(edge: .top, spacing: .zero) {
+            ReviewHeader(counter: counter, trashCount: catalog.trashed.count, block: block,
+                         openTrash: { path.append(.trash) }, openLibrary: { path.append(.library) })
+        }
+        .safeAreaInset(edge: .bottom, spacing: .zero) { dock }
+        .background(DSColor.canvas.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .dsHaptic(model?.lastVerdict?.haptic ?? .trash, trigger: model?.commitCount ?? 0)
+        .dsHaptic(.rewind, trigger: model?.rewindCount ?? 0)
+        .dsHaptic(.queueDone, trigger: model?.queueDoneCount ?? 0)
+        .dsHaptic(.thresholdArmed, trigger: motion.armedCount)
+        .task(id: catalog.isLoaded) {
+            guard catalog.isLoaded else { return }
             if model == nil { model = ReviewModel(catalog: catalog) }
             model?.sync()
         }
         .onChange(of: catalog.screenshots) { _, _ in model?.catalogDidChange() }
         .onChange(of: catalog.state) { _, _ in model?.catalogDidChange() }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                HStack(spacing: DSSpace.s3) {
-                    Button { path.append(.trash) } label: { DSIcon.trash.image }
-                        .accessibilityLabel("Trash, \(catalog.trashed.count) items")
-                    Button { path.append(.library) } label: { DSIcon.library.image }
-                        .accessibilityLabel("Library")
-                }
-            }
-        }
-        .navigationBarTitleDisplayMode(.inline)
-        .background(DSColor.canvas.ignoresSafeArea())
+        .onChange(of: model?.lastAnnouncement) { _, text in announce(text) }
     }
 
-    @ViewBuilder
-    private func content(_ model: ReviewModel) -> some View {
-        VStack(spacing: DSSpace.s4) {
-            HStack {
-                Text("\(model.position) / \(model.total)").dsType(.counter).foregroundStyle(DSColor.ink)
-                    .accessibilityLabel("\(model.position) of \(model.total)")
-                Spacer()
-            }
-            .padding(.horizontal, DSGrid.mobileMargin)
+    // MARK: - Regions
 
-            switch model.phase {
-            case .loading:
-                Spacer()
-            case .noScreenshots:
-                placeholderBlock(.allDone, "No screenshots. Honestly, impressive.")
-            case .allDone:
-                placeholderBlock(.allDone, "Inbox zero, screenshot edition.")
-            default:
-                if let front = model.deck.first {
-                    CardPlaceholder(screenshot: front)
-                        .padding(.horizontal, DSGrid.mobileMargin)
-                }
+    /// The docked row keeps its height in every phase, so the card and the block never jump. The three
+    /// circles give way in `allDone`, because a block carries one filled action, its own CTA
+    /// (ADR-023). In `noScreenshots` the whole row does, since there is nothing to rewind.
+    private var dock: some View {
+        let phase = model?.phase ?? .loading
+        let showsVerdicts = phase != .allDone && phase != .noScreenshots
+        let showsDock = phase != .noScreenshots
+        return ZStack(alignment: .bottomLeading) {
+            VerdictButtonRow(isEnabled: model?.acceptsInput ?? false) { verdict in
+                guard let model else { return }
+                motion.flick(verdict, model: model, reduceMotion: reduceMotion)
             }
+            .frame(maxWidth: .infinity)
+            .opacity(showsVerdicts ? 1 : .zero)
+            .allowsHitTesting(showsVerdicts)
+            .accessibilityHidden(!showsVerdicts)
+            RewindButton(isEnabled: model?.canRewind ?? false, block: block) {
+                guard let model else { return }
+                motion.rewind(model: model, reduceMotion: reduceMotion)
+            }
+            .padding(.leading, DSGrid.mobileMargin)
+        }
+        .padding(.vertical, DSSpace.s2)
+        .opacity(showsDock ? 1 : .zero)
+        .allowsHitTesting(showsDock)
+        .accessibilityHidden(!showsDock)
+        .animation(stateChange, value: showsVerdicts)
+    }
 
-            HStack(spacing: DSSpace.s5) {
-                Button("Rewind") { Task { await model.rewind(landDuration: DSMotion.dur3) } }
-                    .disabled(!model.canRewind)
-                ForEach([Verdict.trash, .fave, .archive], id: \.self) { verdict in
-                    Button(verdict.caption) { Task { await model.commit(verdict, exitDuration: DSMotion.dur3) } }
-                        .disabled(!model.acceptsInput)
-                }
-            }
-            .buttonStyle(.dsPress).dsType(.label).foregroundStyle(DSColor.ink)
-            .padding(.bottom, DSSpace.s5)
+    // MARK: - Phase → what is shown
+
+    private var counter: ProgressCounter.Phase {
+        guard let model else { return .loading }
+        switch model.phase {
+        case .loading: return .loading
+        case .allDone, .noScreenshots: return .done
+        default: return .counting(position: model.position, total: model.total)
         }
     }
 
-    private func placeholderBlock(_ block: DSBlock, _ headline: String) -> some View {
-        VStack(alignment: .leading, spacing: DSSpace.s4) {
-            Text(block.face.text).dsType(.display).foregroundStyle(block.ink).accessibilityHidden(true)
-            Text(headline).dsType(.headline).foregroundStyle(block.ink)
+    /// The block that replaces the deck: `allDone` (the queue is empty, total > 0) or `noScreenshots`.
+    private var emptyState: EmptyState.Kind? {
+        switch model?.phase {
+        case .some(.allDone): return .allDone(trashCount: catalog.trashed.count)
+        case .some(.noScreenshots): return .noScreenshots
+        default: return nil
         }
-        .padding(DSSpace.s5)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .background(block.fill, in: RoundedRectangle(cornerRadius: DSRadius.lg, style: .continuous))
-        .padding(.horizontal, DSGrid.mobileMargin)
+    }
+
+    /// The block behind the header and the dock, whose ink and focus ring they take (§9 Rules).
+    /// `EmptyState` draws `noScreenshots` on `DSBlock.allDone` as well (§15 item 5).
+    private var block: DSBlock? {
+        emptyState == nil ? nil : .allDone
+    }
+
+    /// One burst each time the queue runs out (`ReviewModel.queueDoneCount`), none on a launch that
+    /// starts out done, and none under Reduce Motion, which removes celebration (§6).
+    private var burst: Int? {
+        guard let model, model.phase == .allDone, model.queueDoneCount > 0, !reduceMotion else { return nil }
+        return model.queueDoneCount
+    }
+
+    /// Block in, block out, dock in, dock out: a standard state change. Under Reduce Motion it becomes
+    /// a cross-fade.
+    private var stateChange: Animation? {
+        DSMotion.gated(DSMotion.standard, reduce: reduceMotion, reduced: DSMotion.crossFade)
+    }
+
+    /// P-22: the verdict and the new position in one sentence, the same two facts a sighted user reads
+    /// off the stamp and the counter. High priority, so the focus move to the next card cannot cut it.
+    private func announce(_ text: String?) {
+        guard let text else { return }
+        var announcement = AttributedString(text)
+        announcement.accessibilitySpeechAnnouncementPriority = .high
+        AccessibilityNotification.Announcement(announcement).post()
     }
 }
 
-/// Temporary card: the screenshot fitted on a `surface` rectangle. Replaced by `ScreenshotCard`.
-struct CardPlaceholder: View {
-    @Environment(ImageLoader.self) private var images
-    let screenshot: Screenshot
-    @State private var image: UIImage?
+/// The Review header (IA §3 "Header ownership"): `ProgressCounter` leading, Trash with its count badge
+/// and Library trailing. Glyphs are `DSSize.iconChrome` in a `DSSize.tapMin` hit area, padded around
+/// the glyph rather than enlarged (P-21).
+private struct ReviewHeader: View {
+    let counter: ProgressCounter.Phase
+    let trashCount: Int
+    /// The block behind the header in `allDone` and `noScreenshots`; nil over the canvas.
+    let block: DSBlock?
+    let openTrash: () -> Void
+    let openLibrary: () -> Void
+    @FocusState private var focused: Destination?
+
+    private enum Destination {
+        case trash, library
+    }
+
+    var body: some View {
+        HStack(spacing: DSSpace.s2) {
+            ProgressCounter(phase: counter)
+            Spacer(minLength: DSSpace.s4)
+            chromeButton(.trash, icon: DSIcon.trash, action: openTrash)
+                .accessibilityLabel("Trash")
+                .accessibilityValue(trashValue)
+                .accessibilityHint("Opens Trash.")
+            chromeButton(.library, icon: DSIcon.library, action: openLibrary)
+                .accessibilityLabel("Library")
+                .accessibilityHint("Opens your favorites and your archive.")
+        }
+        .padding(.horizontal, DSGrid.mobileMargin)
+        .padding(.vertical, DSSpace.s2)
+    }
+
+    /// `ink2` over the canvas; over a block, the block's ink and focus ring (§9 Rules, ADR-023).
+    private func chromeButton(_ destination: Destination, icon: DSIconRef, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            icon.image
+                .resizable()
+                .scaledToFit()
+                .frame(width: DSSize.iconChrome, height: DSSize.iconChrome)
+                .overlay(alignment: .topTrailing) {
+                    if destination == .trash, showsBadge { badge }
+                }
+                .frame(width: DSSize.tapMin, height: DSSize.tapMin)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.dsPress)
+        .foregroundStyle(block?.ink ?? DSColor.ink2)
+        .focused($focused, equals: destination)
+        .dsFocusRing(focused == destination, cornerRadius: DSRadius.pill, color: block?.focusRing ?? DSColor.focus)
+    }
+
+    /// The count on a `trash.main` badge (P-06), `ink` on tomato at 4.61:1 (P-19). A number and not a
+    /// dot, so color is never alone (§13). Not drawn over a block: the block's copy already carries the
+    /// count, and color on a block comes from `DSBlock` alone.
+    private var showsBadge: Bool { trashCount > 0 && block == nil }
+
+    private var badge: some View {
+        Text(trashCount.formatted())
+            .dsType(.labelSmall)
+            .foregroundStyle(DSColor.ink)
+            .padding(.horizontal, DSSpace.s1)
+            .background(DSColor.trash.main, in: RoundedRectangle(cornerRadius: DSRadius.xs, style: .continuous))
+            .fixedSize()
+            .alignmentGuide(.top) { $0[VerticalAlignment.center] }
+            .alignmentGuide(.trailing) { $0[HorizontalAlignment.center] }
+            .accessibilityHidden(true)
+    }
+
+    private var trashValue: String {
+        switch trashCount {
+        case 0: return "Empty"
+        case 1: return "1 item"
+        default: return "\(trashCount) items"
+        }
+    }
+}
+
+/// The all-done burst of §11.2. The three verdict glyphs fly out the way their cards go, from the
+/// centre to the edge, and fade over `DSMotion.confetti` on the throw's ease-out. They use the
+/// block's ink, not the verdict or expressive colours, because P-06 keeps verdict colours to four
+/// places and expressive colours to full-bleed blocks. Transform and opacity only (§6); hidden from
+/// VoiceOver and from touches.
+private struct AllDoneBurst: View {
+    let ink: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isOut = false
 
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                RoundedRectangle(cornerRadius: DSRadius.lg, style: .continuous).fill(DSColor.surface)
-                if let image {
-                    Image(uiImage: image).resizable().aspectRatio(contentMode: .fit)
-                        .clipShape(RoundedRectangle(cornerRadius: DSRadius.lg, style: .continuous))
+                ForEach(Verdict.allCases, id: \.self) { verdict in
+                    verdict.icon.image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: DSSize.stampIcon, height: DSSize.stampIcon)
+                        .offset(isOut ? travel(verdict, in: geo.size) : .zero)
+                        .opacity(isOut ? .zero : 1)
                 }
             }
-            .task(id: screenshot.id) {
-                let scale = UIScreen.main.scale
-                image = await images.image(for: screenshot.id, targetSize: CGSize(width: geo.size.width * scale, height: geo.size.height * scale))
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .foregroundStyle(ink)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+        .onAppear {
+            withAnimation(DSMotion.gated(DSMotion.throwOut(duration: DSMotion.confetti), reduce: reduceMotion)) {
+                isOut = true
             }
         }
-        .dsShadow(.floating)
-        .accessibilityLabel("Screenshot")
+    }
+
+    /// Along the verdict's swipe axis (ADR-019), from the centre of the region to its edge.
+    private func travel(_ verdict: Verdict, in size: CGSize) -> CGSize {
+        let axis: CGVector
+        switch verdict {
+        case .trash: axis = SwipeSector.trash.axis
+        case .archive: axis = SwipeSector.archive.axis
+        case .fave: axis = SwipeSector.fave.axis
+        }
+        return CGSize(width: axis.dx * size.width / 2, height: axis.dy * size.height / 2)
     }
 }

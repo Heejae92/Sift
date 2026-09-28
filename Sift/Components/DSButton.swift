@@ -17,7 +17,8 @@ import SwiftUI
 ///   a block carries exactly one filled action (P-19, ADR-023).
 /// - Every kind pads by `DSSpace.s3` vertically and `DSSpace.s5` horizontally, is at least
 ///   `DSSize.tapMin` in both dimensions (P-21), presses through `DSPressStyle`, and wraps rather
-///   than truncates (P-20). The button hugs its label.
+///   than truncates (P-20). The button hugs its label unless `isFullWidth`, which the docked purge
+///   button and the sheet's buttons pass, as the guide draws them.
 /// - States: default · pressed · disabled (dimmed; keeps its label and gains the disabled trait,
 ///   also when a container disables it) · loading (the label is replaced by a progress view at the
 ///   same size, input is off; VoiceOver keeps the title and hears "In progress" as the value).
@@ -39,16 +40,19 @@ struct DSButton: View {
     private let kind: Kind
     private let isLoading: Bool
     private let isEnabled: Bool
+    private let isFullWidth: Bool
     private let action: () -> Void
 
     @Environment(\.isEnabled) private var isEnabledByContainer
     @FocusState private var isFocused: Bool
 
-    init(_ title: String, kind: Kind, isLoading: Bool = false, isEnabled: Bool = true, action: @escaping () -> Void) {
+    init(_ title: String, kind: Kind, isLoading: Bool = false, isEnabled: Bool = true, isFullWidth: Bool = false,
+         action: @escaping () -> Void) {
         self.title = title
         self.kind = kind
         self.isLoading = isLoading
         self.isEnabled = isEnabled
+        self.isFullWidth = isFullWidth
         self.action = action
     }
 
@@ -86,6 +90,7 @@ struct DSButton: View {
         .padding(.vertical, DSSpace.s3)
         .padding(.horizontal, DSSpace.s5)
         .frame(minWidth: DSSize.tapMin, minHeight: DSSize.tapMin)
+        .frame(maxWidth: isFullWidth ? .infinity : nil)
         .background {
             if let fillColor {
                 shape.fill(fillColor)

@@ -63,15 +63,48 @@ struct ReviewModelTests {
         #expect(model.phase == .reviewing && model.deck.first?.id == "s1")
     }
 
-    @Test func newScreenshotJoinsBehindThePinnedFrontCard() async {
+    /// IA §5: a newcomer joins by date, behind the front card, never under the thumb. Only a
+    /// verdict (or a rewind, or the card vanishing) changes which card is in front.
+    @Test func newScreenshotJoinsBehindTheFrontCard() async {
         let (model, catalog, library) = await make(shots: Fixtures.shots(2))
         model.beginDrag()
         await library.add(Fixtures.newer("s0"))
         await catalog.refresh()
         model.catalogDidChange()
-        #expect(model.deck.map(\.id) == ["s1", "s0", "s2"])   // front pinned, newcomer behind it
+        #expect(model.deck.map(\.id) == ["s1", "s0", "s2"])   // mid-drag: front pinned, newcomer behind it
         model.cancelDrag()
-        #expect(model.deck.map(\.id) == ["s0", "s1", "s2"])   // released: newest first again
+        #expect(model.deck.map(\.id) == ["s1", "s0", "s2"])   // released: still the card under review
+        await model.commit(.archive, exitDuration: 0)
+        #expect(model.deck.map(\.id) == ["s0", "s2"])         // the verdict is what brings the newcomer forward
+    }
+
+    /// IA §5 "invalidation": Rewind is dropped when its verdict no longer stands, whether the
+    /// screenshot was restored in Trash, purged, or un-hearted in Photos. An untouched verdict keeps it.
+    @Test func rewindIsDroppedWhenItsVerdictNoLongerStands() async {
+        let (model, catalog, library) = await make(shots: Fixtures.shots(4))
+        await model.commit(.trash, exitDuration: 0)          // s1 → Trash
+        #expect(model.canRewind)
+        catalog.restore("s1")                                 // restored from the Trash screen
+        model.catalogDidChange()
+        #expect(!model.canRewind)
+        #expect(model.deck.map(\.id) == ["s2", "s1", "s3"])  // returns by date, behind the stable front
+
+        await model.commit(.trash, exitDuration: 0)          // s2 → Trash
+        #expect(model.canRewind)
+        _ = await catalog.purge(["s2"])                       // purged for good
+        model.catalogDidChange()
+        #expect(!model.canRewind)
+
+        await model.commit(.fave, exitDuration: 0)           // s1 → Favorites
+        #expect(model.canRewind)
+        await library.setFavoriteFlag("s1", false)            // un-hearted in Photos
+        await catalog.refresh()
+        model.catalogDidChange()
+        #expect(!model.canRewind)
+
+        await model.commit(.archive, exitDuration: 0)        // s3 → Archive, untouched
+        model.catalogDidChange()
+        #expect(model.canRewind)
     }
 
     @Test func vanishedFrontCardIsSkippedWithoutAVerdict() async {

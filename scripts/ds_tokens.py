@@ -217,7 +217,7 @@ for ink in ["ink", "ink2", "inkMuted"]:
 PAIRS += [
     ("onToast", "toast", 4.5, "text", None),
     ("onAccent", "accent", 4.5, "text · primary button label", None),
-    ("onImage", "black", 4.5, "text · viewer bars", None),
+    ("onImage", "viewerBackdrop", 4.5, "text · viewer bars", None),
     ("ink", "chip", 4.5, "text · chip over a white screenshot", "white"),
     ("ink", "chip", 4.5, "text · chip over a black screenshot", "black"),
     ("ink", "surfaceRaised", 3.0, "non-text · secondary button glyph", None),
@@ -316,9 +316,12 @@ DECLARATION_ONLY = {
     "--motion-toast-visible": "the toast demo is a static swatch, so nothing counts down 2.5 s",
     "--motion-confetti": "the all-done celebration is not drawn in the guide; the deck demo shows the copy, not the burst",
     "--motion-stagger": "the guide has no emptying grid; the thumbnail swatches are static",
+    "--size-viewer-zoom-double-tap": "the guide has no working viewer; its viewer mini is a static swatch",
+    "--size-viewer-zoom-max": "same: nothing in the guide pinches",
 }
 
 UNITLESS = {"stackScaleStep", "downFollow", "upScale", "promoteAt", "stampFaveRaise", "stampPopScale", "disabled",
+            "viewerZoomDoubleTap", "viewerZoomMax",
             "gridColumns", "stackDepth", "desktopColumns", "mobileColumns"}
 ENUM_PREFIX = {"DSSpace": "space", "DSRadius": "radius", "DSSize": "size", "DSSwipe": "swipe",
                "DSGrid": "grid", "DSOpacity": "opacity"}

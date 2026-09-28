@@ -67,6 +67,9 @@ enum DSSize {
     static let stampIcon: CGFloat = 24
     /// How far above the card's centre the FAVE stamp's centre sits, as a fraction of the card height.
     static let stampFaveRaise: CGFloat = 0.12
+    /// AssetViewer: the scale a double-tap zooms to, and the ceiling a pinch can reach.
+    static let viewerZoomDoubleTap: CGFloat = 2
+    static let viewerZoomMax: CGFloat = 4
     static let focusRing: CGFloat = 3
     static let gridColumns: Int = 3
     static let stackDepth: Int = 3

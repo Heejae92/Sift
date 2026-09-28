@@ -29,7 +29,7 @@ name lint from it. The app consumes those tokens and nothing else (P-12).
 | `docs/knowledge/IA.md` | The information architecture: objects, screens, navigation, routing, the queue lifecycle, persistence, external change. ADR-025, confirmed 2026-09-27 |
 | `docs/knowledge/DESIGN_PRINCIPLES.md` | P-01 to P-23, the rules a review cites |
 | `docs/knowledge/PRINCIPLES_CHECKLIST.md` | 27 lines for the 23 principles (P-19 gets four, P-15 gets two), plus a pre-ship list for a screen |
-| `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-028, plus the superseded decisions S-1 to S-4 |
+| `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-030, plus the superseded decisions S-1 to S-4 |
 | `docs/superpowers/specs/2026-09-23-sift-design-system-design.md` | The design spec behind the design system |
 | `docs/references.md` | Reference boards, the format reference, three Lazyweb permission-screen links |
 | `design-system.html` | Single-file living style guide with a working swipe demo |
@@ -44,9 +44,9 @@ print:
 
 ```
 ls Sift/DesignSystem/*.swift | wc -l                        # token files, 9
-grep -c '^## ADR-' docs/knowledge/DECISIONS.md              # ADRs, 28
+grep -c '^## ADR-' docs/knowledge/DECISIONS.md              # ADRs, 30
 grep -o '^## ADR-[0-9]\{3\}' docs/knowledge/DECISIONS.md \
-  | tail -1                                                # highest ADR, ## ADR-028
+  | tail -1                                                # highest ADR, ## ADR-030
 grep -c '^### S-' docs/knowledge/DECISIONS.md               # superseded entries, 4
 grep -c '^\*\*P-' docs/knowledge/DESIGN_PRINCIPLES.md       # principles, 23
 grep -c '^- \[ \] P-' docs/knowledge/PRINCIPLES_CHECKLIST.md # principle checklist lines, 27
@@ -54,7 +54,7 @@ grep -c '^- \[ \] P-' docs/knowledge/PRINCIPLES_CHECKLIST.md # principle checkli
 
 The figures after each `#` are what those commands printed on 2026-09-27, run from the repository
 root. The ADR range in the table above comes from the second and third of them: the log runs
-ADR-001 to ADR-028 with no gaps, and S-1 to S-4 alongside.
+ADR-001 to ADR-030 with no gaps, and S-1 to S-4 alongside.
 
 ## Building the app
 
@@ -105,7 +105,7 @@ running all four, because `lint` compares the `:root` block pasted into the guid
 |---|---|---|
 | 1 | `python3 scripts/ds_tokens.py contrast` | ends with `43 pairs · 0 failure(s)`, and no `OUT OF sRGB GAMUT` note in the token table |
 | 2 | `python3 scripts/ds_tokens.py emit-css > scripts/out/tokens.css` | writes the `:root` block; paste it into `design-system.html` |
-| 3 | `python3 scripts/ds_tokens.py lint` | five `lint: EXCEPTION` lines, one `lint: WARNING` line, then `lint: OK` |
+| 3 | `python3 scripts/ds_tokens.py lint` | seven `lint: EXCEPTION` lines, one `lint: WARNING` line, then `lint: OK` |
 | 4 | `scripts/typecheck-ds.sh` | `typecheck: OK` |
 
 The 43 contrast pairs are 40 enforced plus 3 informational rows: the yellow edge against `canvas`,
@@ -125,9 +125,10 @@ blocks means a row per fill rather than one row. `surfaceRaised` does not have t
 measures 2.16 against `lavender` and clears the bar on `violet` alone. Bare text is not a shape, so only its
 label is measured, and the label is the pair the block's own copy row already clears.
 
-`lint`'s five EXCEPTION lines cover `--grid-breakpoint`, `--motion-dur3`, `--motion-toast-visible`,
-`--motion-confetti` and `--motion-stagger` — variables the guide declares but has no way to consume, each allowlisted
-with a reason (ADR-022, ADR-028). They are the `DECLARATION_ONLY` entries printing themselves and their
+`lint`'s seven EXCEPTION lines cover `--grid-breakpoint`, `--motion-dur3`, `--motion-toast-visible`,
+`--motion-confetti`, `--motion-stagger`, `--size-viewer-zoom-double-tap` and `--size-viewer-zoom-max` —
+variables the guide declares but has no way to consume, each allowlisted with a reason (ADR-022,
+ADR-028, ADR-030). They are the `DECLARATION_ONLY` entries printing themselves and their
 recorded reason on every run, rather than being tolerated in silence. The WARNING line stands while
 `DSIconCredits.entries` is empty, and it is a warning: it does not change the exit code. Both are
 expected output; the verdict is the last line.
