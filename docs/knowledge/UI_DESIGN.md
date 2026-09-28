@@ -801,6 +801,8 @@ a raw curve to `withAnimation`" holds for replacements exactly as it holds for r
 | `DSMotion.toastVisible` | 2.5 s | Toast auto-dismiss |
 | `DSMotion.confetti` | 0.6 s | All-done confetti burst; not played under Reduce Motion |
 | `DSMotion.stagger` | 0.02 s | Per-cell delay when a grid empties; each cell fades over `DSMotion.fade` |
+| `DSMotion.demoCard` | 1.2 s | Permission demo: one synthetic verdict, drag to flick |
+| `DSMotion.demoPause` | 1.0 s | Permission demo: rest between cards |
 
 ### Curves and springs
 
@@ -1298,7 +1300,7 @@ Each entry gives anatomy, the tokens it consumes, its states, and its accessibil
 ### PermissionScreen, SwipeLegend, DemoStack
 
 - **Anatomy.** The top 55 % is `DemoStack` — three bundled sample screenshots looping through the
-  three verdicts at 1.2 s each, driven by the real gesture code with synthetic input so the demo
+  three verdicts at `DSMotion.demoCard` each with a `DSMotion.demoPause` rest, driven by the real gesture code with synthetic input so the demo
   cannot drift from the product. The user can interrupt it and swipe for real; a completed direction
   gets a `DSIcon.check` in the legend. Under Reduce Motion the stack becomes three static panels.
   Below it sit the headline, `SwipeLegend`, the CTA, and a footer link to the credits screen.
@@ -1579,7 +1581,14 @@ Example strings, all from the screens above:
 | Delete failure | `"Couldn't delete 3. Try again."` |
 | Delete cancelled | `"Not deleted"` |
 | Library empty | `"No faves yet. Swipe up on the good ones."` · `"Nothing archived. Swipe right to stash keepers."` |
-| VoiceOver announcement | `"Trashed. 13 of 340"` |
+| VoiceOver announcement | `"Trashed. 13 of 340"` · `"Rewound. 12 of 340"` |
+| Footer link to Credits (Permission, Library) | `"Icons"` |
+| Legend row, done | value `"Done"` |
+| Denied, after "Not now" | `"Photos access for \(Brand.name) is set in Settings."` |
+| Limited, one screenshot | `"You picked 1 screenshot. \(Brand.name) only sees that one."` · `"\(Brand.name) this one"` |
+| Trash empty CTA | `"Back to sifting"` (built from `Brand.name`; recheck on a rename) |
+| Loading button, VoiceOver value | `"In progress"` |
+| Credits, no entries | `"No third-party icons ship yet."` |
 
 ---
 
@@ -1816,6 +1825,8 @@ side applies `deg` or `ms` at the point of use. Everything that *is* a length ca
 | `DSMotion.toastVisible` | `--motion-toast-visible` | `2.5s` |
 | `DSMotion.confetti` | `--motion-confetti` | `0.6s` |
 | `DSMotion.stagger` | `--motion-stagger` | `0.02s` |
+| `DSMotion.demoCard` | `--motion-demo-card` | `1.2s` |
+| `DSMotion.demoPause` | `--motion-demo-pause` | `1s` |
 
 ### Declared but not consumed
 
@@ -1865,7 +1876,7 @@ demo, which implements the physics in JavaScript from the `--swipe-*` and `--mot
 
 ## 15. Open questions
 
-Eight, carried from the approved interaction spec and from the build. None of them is a question
+Fourteen, carried from the approved interaction spec and from the build. None of them is a question
 about a token value: those are settled by the four verification commands in
 [§0](#the-four-commands) — `contrast`, `emit-css`, `lint` and `scripts/typecheck-ds.sh` — which fail
 the build rather than leaving a number open. Two things that used to read as open are also settled
@@ -1929,3 +1940,9 @@ the expressive palette to serve as blocks, `onboarding` on `trash.main` and `lim
 | v1.2 | 2026-09-24 | Token corrections. The destructive button named as a `trash.main` fill with a navy `ink` label at 4.61:1; the two blocks that borrow a verdict color named in §1 and §9; the face rule restated as round parentheses plus one world-script glyph; the `--grid-breakpoint` exception wording corrected against the guide's twelve `1199.98px` queries. |
 | v1.3 | 2026-09-24 | Propagation of the `DSBlock` and `DSFont` changes. §9 and §10: the block CTA is `DSBlock.ctaFill` with `DSBlock.ctaLabel` and the block focus ring is `DSBlock.focusRing`, replacing the free choice between a navy and a white pill and replacing `DSColor.focus` on a block. §1: the contrast block regenerated at 43 pairs, 0 failures, and the 60/30/10 rule corrected to four places. §2: `DSFont.availableDisplayNames` replaces `displayAvailability`, and the `0.06em` stamp tracking recorded as a rounding of 0.0625 em. §13: the cobalt exception stated. §14: the CSS-name note recounted. §0: the type list completed and `README.md` removed from the prose that names the product. |
 | v1.4 | 2026-09-24 | Citation and reconciliation pass. Every cross-file line citation and every contrast-row number replaced by a token pair, a quoted `Use` string, a selector or a recorded command; the product-name tally recounted (`design-system.html` 10, not 8) and restated as a rule; §9 and §10 reconciled on one filled action per block, with the second action bare text in the block's ink and a fifth button kind for it; §5 restated for `.dsFocusRing`'s `color:` parameter and the measurement that covers a block; rung 2 of the destructive ladder corrected to the count alone; §14's `max-width` parenthesis corrected from four queries to eight properties; `ink2` 6.19 and `inkMuted` 4.77 folded in from the `DSColor` comments. |
+9. **The onboarding face.** §9 assigns the `eager` face to `DSBlock.onboarding`, but §11.1 gives the top of the screen to `DemoStack` and has no slot for a face. The build shows no face there. Owner to confirm.
+10. **The demo's height.** §11.1 says "the top 55 %"; no layout-fraction token exists, so the built demo takes whatever height the copy leaves (about 58 % on an iPhone 17 at the default text size) and steps aside at accessibility sizes.
+11. **Implementer values awaiting the owner's eye.** `DSMotion.stagger` 0.02 s (ADR-028), the all-done burst as three verdict glyphs (ADR-029), `DSSize.viewerZoomMax` 4 (ADR-030), and the demo's card size (derived from the product card, about 179 × 375 pt).
+12. **Secondary button shape.** §10 gives `.secondary` `DSRadius.md` and `DSTextRole.labelSmall`; the guide draws it as a pill in `.label`. The app follows §10. One of the two must change.
+13. **Pill labels at accessibility sizes.** A `DSRadius.pill` button whose label wraps to three lines has its first and last lines clipped by the capsule's ends (seen on "Delete all permanently (27 · 48 MB)" at AX5). A cap on the radius once the label wraps is the likely fix.
+14. **Icons on buttons.** §8 lists glyphs for the viewer's actions, but `DSButton` has no icon slot; the viewer's actions are text only.

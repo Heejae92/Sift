@@ -26,6 +26,9 @@ enum DSMotion {
     /// Per-cell delay when a grid empties (Trash purge-all): cells fade over `fade`, each starting
     /// this much after the previous one, so a full screen of cells clears in about half a second.
     static let stagger: Double = 0.02
+    /// The Permission demo loop (§11.1): one synthetic verdict per card, then a pause before the next.
+    static let demoCard: Double = 1.2
+    static let demoPause: Double = 1.0
     /// Scale a stamp pops in from on a button-triggered verdict (1.15 → 1), driven by `stampPop`.
     static let stampPopScale: CGFloat = 1.15
 

@@ -6,6 +6,10 @@ struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var path: [Route] = []
 
+    private var showsDeniedBlock: Bool {
+        catalog.isLoaded && !catalog.authorization.isUsable && catalog.authorization != .notDetermined
+    }
+
     var body: some View {
         Group {
             if !catalog.isLoaded {
@@ -28,6 +32,13 @@ struct RootView: View {
             }
         }
         .background(DSColor.canvas.ignoresSafeArea())
+        // P-16: the root pins the scheme, light. The one exception is the denied block: violet with
+        // white ink, and the status bar takes its style from the scheme, so dark text would vanish
+        // there. Every color in the app is a token, so `.dark` changes nothing but the system bar.
+        .preferredColorScheme(showsDeniedBlock ? .dark : .light)
+        // Here and not on PermissionScreen: that screen is removed in the same update that makes
+        // access usable, so a trigger on it never fires. `grantCount` changes only on a grant.
+        .dsHaptic(.permissionGranted, trigger: catalog.grantCount)
         .task {
             await catalog.load()  // observing starts inside, once access is usable (ADR-010)
         }

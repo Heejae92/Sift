@@ -318,6 +318,8 @@ DECLARATION_ONLY = {
     "--motion-stagger": "the guide has no emptying grid; the thumbnail swatches are static",
     "--size-viewer-zoom-double-tap": "the guide has no working viewer; its viewer mini is a static swatch",
     "--size-viewer-zoom-max": "same: nothing in the guide pinches",
+    "--motion-demo-card": "the guide's deck demo is driven by the visitor, not by a loop",
+    "--motion-demo-pause": "same: no auto-loop in the guide",
 }
 
 UNITLESS = {"stackScaleStep", "downFollow", "upScale", "promoteAt", "stampFaveRaise", "stampPopScale", "disabled",

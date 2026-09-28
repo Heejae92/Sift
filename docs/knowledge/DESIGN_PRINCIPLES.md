@@ -144,7 +144,11 @@ the rule it is demonstrating.
 
 **P-16 · `preferredColorScheme(.light)` at the root.** The root view pins the scheme. Nothing else
 reads `colorScheme`, and no token has a dark variant. A user running iOS in dark mode sees a light
-app; that trade-off is recorded, not accidental (ADR-006).
+app; that trade-off is recorded, not accidental (ADR-006). One exception, added 2026-09-27 from the
+build: while the denied block is up (violet, white ink) the root pins `.dark`, because the status
+bar takes its style from the scheme and dark text on violet is invisible. A child view's preference
+loses to the root's, which is why the decision sits in `RootView`. Every color in the app is a
+token, so the scheme changes nothing but the system bar.
 
 ## 4. Patterns
 

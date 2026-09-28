@@ -9,6 +9,9 @@ final class Catalog {
     private(set) var screenshots: [Screenshot] = []
     private(set) var state: StoreState
     private(set) var authorization: PhotoAuthorization = .notDetermined
+    /// Increments each time access turns from unusable to usable in this process: the grant haptic's
+    /// trigger. A cold launch with access already granted does not count.
+    private(set) var grantCount = 0
     private(set) var isLoaded = false
     /// Set when the mirror album could not be written (limited access); the list stays the truth.
     private(set) var albumMirrorRefused = false
@@ -72,11 +75,16 @@ final class Catalog {
     }
 
     func requestAuthorization() async {
-        authorization = await library.requestAuthorization()
-        if authorization.isUsable {
-            await refresh()
+        let status = await library.requestAuthorization()
+        if status.isUsable { await refresh() }
+        // Assigned after the fetch: RootView switches on `authorization`, and a limited grant that
+        // rendered before `screenshots` arrived would read "You picked 0 screenshots" for a frame.
+        let wasUsable = authorization.isUsable
+        authorization = status
+        if status.isUsable {
             await adoptArchiveAlbumIfNeeded()
-            if authorization == .authorized { state.acknowledgedSelectionCount = nil; persist() }
+            if status == .authorized { state.acknowledgedSelectionCount = nil; persist() }
+            if !wasUsable { grantCount += 1 }
             startObserving()
         }
         isLoaded = true
@@ -85,12 +93,15 @@ final class Catalog {
     /// Re-read authorization and the library. Called on every return to the foreground (IA §4).
     func refreshAuthorization() async {
         let before = authorization
-        authorization = await library.authorizationStatus()
-        if authorization.isUsable {
-            await refresh()
-            if before == .limited, authorization == .authorized {
+        let status = await library.authorizationStatus()
+        if status.isUsable { await refresh() }
+        authorization = status  // after the fetch, for the same reason as in requestAuthorization()
+        if status.isUsable {
+            pruneMissing()  // the fetch above ran under the old status; prune under the new one
+            if before == .limited, status == .authorized {
                 state.acknowledgedSelectionCount = nil; persist()
             }
+            if !before.isUsable { grantCount += 1 }
             startObserving()
         }
     }

@@ -20,7 +20,7 @@ struct SiftApp: App {
             RootView()
                 .environment(catalog)
                 .environment(images)
-                .preferredColorScheme(.light) // P-16, ADR-006
+                 // P-16, ADR-006
         }
     }
 }

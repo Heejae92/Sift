@@ -23,11 +23,12 @@ schemes:
       targets:
         Sift: all
         SiftTests: [test]
+        SiftUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
-      targets: [SiftTests]
+      targets: [SiftTests, SiftUITests]
 
 targets:
   Sift:
@@ -74,3 +75,17 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.heejaeeo.sift.tests
         GENERATE_INFOPLIST_FILE: true
+  SiftUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: SiftUITests
+        excludes:
+          - "**/* [0-9].*"
+    dependencies:
+      - target: Sift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.heejaeeo.sift.uitests
+        GENERATE_INFOPLIST_FILE: true
+        TEST_TARGET_NAME: Sift

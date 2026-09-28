@@ -105,7 +105,7 @@ running all four, because `lint` compares the `:root` block pasted into the guid
 |---|---|---|
 | 1 | `python3 scripts/ds_tokens.py contrast` | ends with `43 pairs · 0 failure(s)`, and no `OUT OF sRGB GAMUT` note in the token table |
 | 2 | `python3 scripts/ds_tokens.py emit-css > scripts/out/tokens.css` | writes the `:root` block; paste it into `design-system.html` |
-| 3 | `python3 scripts/ds_tokens.py lint` | seven `lint: EXCEPTION` lines, one `lint: WARNING` line, then `lint: OK` |
+| 3 | `python3 scripts/ds_tokens.py lint` | nine `lint: EXCEPTION` lines, one `lint: WARNING` line, then `lint: OK` |
 | 4 | `scripts/typecheck-ds.sh` | `typecheck: OK` |
 
 The 43 contrast pairs are 40 enforced plus 3 informational rows: the yellow edge against `canvas`,
@@ -125,10 +125,10 @@ blocks means a row per fill rather than one row. `surfaceRaised` does not have t
 measures 2.16 against `lavender` and clears the bar on `violet` alone. Bare text is not a shape, so only its
 label is measured, and the label is the pair the block's own copy row already clears.
 
-`lint`'s seven EXCEPTION lines cover `--grid-breakpoint`, `--motion-dur3`, `--motion-toast-visible`,
-`--motion-confetti`, `--motion-stagger`, `--size-viewer-zoom-double-tap` and `--size-viewer-zoom-max` —
-variables the guide declares but has no way to consume, each allowlisted with a reason (ADR-022,
-ADR-028, ADR-030). They are the `DECLARATION_ONLY` entries printing themselves and their
+`lint`'s nine EXCEPTION lines cover `--grid-breakpoint`, `--motion-dur3`, `--motion-toast-visible`,
+`--motion-confetti`, `--motion-stagger`, `--size-viewer-zoom-double-tap`, `--size-viewer-zoom-max`,
+`--motion-demo-card` and `--motion-demo-pause` — variables the guide declares but has no way to
+consume, each allowlisted with a reason (ADR-022, ADR-028, ADR-030). They are the `DECLARATION_ONLY` entries printing themselves and their
 recorded reason on every run, rather than being tolerated in silence. The WARNING line stands while
 `DSIconCredits.entries` is empty, and it is a warning: it does not change the exit code. Both are
 expected output; the verdict is the last line.

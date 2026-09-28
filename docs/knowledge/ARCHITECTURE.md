@@ -55,15 +55,16 @@ Sift/                              app target sources (XcodeGen `sources: [Sift]
     ImageLoader.swift              PHCachingImageManager wrapper · thumbnails and card images · file size
     SystemUI.swift                 open Settings · present the limited-library picker
   Features/                        one folder per screen, screen = view + model
-    Permission/                    PermissionScreen · SwipeLegend · DemoStack · LimitedInterstitial · DeniedView
-    Review/                        ReviewScreen (+ AllDoneBurst) · ReviewModel (deck state machine) · SwipeGeometry
+    Permission/                    PermissionScreen (onboarding + denied) · SwipeLegend · DemoStack · LimitedInterstitial
+    Review/                        ReviewScreen (+ AllDoneBurst) · ReviewModel (deck state machine)
                                    CardStack (+ DeckMotion, CardPose, CardSkeleton) · ScreenshotCard · VerdictStamp
                                    VerdictButtonRow (+ VerdictCaption) · RewindButton · ProgressCounter
     Trash/                         TrashScreen · TrashModel · PurgeAllSheet
     Library/                       LibraryScreen · LibraryModel · SegmentedControl
     Viewer/                        AssetViewer (two action sets, chosen by the presenting screen)
     Credits/                       CreditsScreen (DSIconCredits.entries)
-  Components/                      cross-screen pieces: Buttons · ThumbnailCell · EmptyState · BlockView · Toast
+  Components/                      cross-screen pieces: DSButton · BlockView · EmptyState · ThumbnailCell · Toast
+                                   SwipeGeometry (pure gesture maths, shared by Review and the Permission demo)
   DesignSystem/                    the nine token files. Unchanged by the app phase; the only place a value is typed
   Resources/
     Assets.xcassets                LaunchBackground · AccentColor · icon catalog (Noun Project assets, when they land)
@@ -157,9 +158,9 @@ Each screen has a thin model that reads the catalog and owns only screen-local s
   `rewind()` replays the recorded entry, and `catalogDidChange()` drops that entry when its verdict
   no longer stands (restored in Trash, purged, un-hearted in Photos). The sleep is injected so tests
   run without waiting.
-- `SwipeGeometry` — pure functions for the gesture: sector from `(dx, dy)` with hysteresis, the
-  commit rule (distance or velocity with a travel floor), rotation, stamp opacity, all read from
-  `DSSwipe`. Tested on their own.
+- `SwipeGeometry` (in `Components/`, because the Permission demo swipes too) — pure functions for
+  the gesture: sector from `(dx, dy)` with hysteresis, the commit rule (distance or velocity with a
+  travel floor), rotation, stamp opacity, all read from `DSSwipe`. Tested on their own.
 - `TrashModel` — `trashed` plus the purge flow: `purgeOne`, `purgeAll` (sheet → dialog), and the
   outcome surfaced as a toast or an inline line (IA §9).
 - `LibraryModel` — `favorites` / `archived`, the segment, and `move` / `trash` from the viewer.
