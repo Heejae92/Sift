@@ -72,6 +72,7 @@
 | 028 | Six documented values become tokens; `DSOpacity` joins the layout file | 2026-09-27 | Active |
 | 029 | The all-done burst is the three verdict glyphs in the block's ink | 2026-09-27 | Active · owner has not seen it |
 | 030 | Viewer tokens: `viewerBackdrop`, a double-tap scale and a pinch ceiling | 2026-09-27 | Active · ceiling is an assumption |
+| 031 | First look at the running app: centred blocks with a half-screen face, short labels, no Credits link on Permission, real sample screenshots | 2026-09-27 | Active |
 | S-1 | Dark-first adaptive tokens | 2026-09-22 | Superseded by 006 |
 | S-2 | SF Pro Rounded system font | 2026-09-22 | Superseded by 003 |
 | S-3 | SF Symbols as the icon set | 2026-09-22 | Superseded by 017 |
@@ -1336,6 +1337,35 @@ at the source, never typed in a view.
 
 **Applies to** `DSColor.swift`, `DSLayout.swift`, `scripts/ds_tokens.py`, `design-system.html`,
 `UI_DESIGN.md` §1, §4, §10, §14, `Sift/Features/Viewer/AssetViewer.swift`; P-07, P-12.
+
+---
+
+## ADR-031 · First look at the running app: centred blocks with a half-screen face, short labels, no Credits link on Permission, real sample screenshots
+
+**Context.** The owner ran the app on a simulator for the first time and sent four notes with
+screenshots: "가운데 정렬로 만들고, 아이콘스 버튼은 지워", "모션은 좋은데 캡쳐 사진 예시로 들어가야지",
+"가운데 정렬하고 공간을 넓게 쓰도록 해. 아이콘은 화면의 반 이상 쓰도록 해" (on the lime all-done block) and
+"버튼명 너무 길어 버튼명 짧고 명확하게" (on the purge-all button).
+
+**Decision.** Four changes, all of them the owner's. Every color block is centred, and its face is
+scaled to fill the top `DSSize.blockFaceShare` (0.5) of the block, as large as the width allows;
+the Permission copy is centred under the demo. Button labels are short: "Get started", "Delete all
+(27)" (the size stays in the header), "Delete 27" and "Keep" on the sheet, "Delete" and "Restore"
+in the Trash viewer, "Archive" / "Favorite" and "Trash" in the Library viewer, "Keep sifting" on
+the empty Trash. The word "permanently" now lives in the sheet's title and the iOS dialog, not on
+buttons. The Permission screen has no link to Credits; A3 stands with the Library footer alone. The
+six sample screenshots are real iOS screens captured on a simulator (Settings, Maps, Calendar,
+Photos, Safari, Shortcuts) instead of the drawn placeholders, so the demo stack shows what a
+screenshot looks like.
+
+**Consequences.** `BlockView` measures the face and scales it (a transform, not a font size, so
+P-13 holds); the open question about the onboarding face stays open, since that screen has the
+demo where the face would go. `UI_DESIGN.md` §12 carries the new strings; the guide's mock buttons
+match them. The bundle grows by the six PNGs.
+
+**Applies to** `Sift/Components/BlockView.swift`, `Sift/Features/Permission/*`, `TrashModel`,
+`PurgeAllSheet`, `AssetViewer`, `EmptyState`, `Sift/Resources/SampleScreenshots/`, `DSSize.blockFaceShare`,
+`UI_DESIGN.md` §9, §10, §11.1, §12, `IA.md` §2 row C and A3.
 
 ---
 

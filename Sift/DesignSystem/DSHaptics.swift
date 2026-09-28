@@ -16,7 +16,7 @@ enum DSHaptic {
     case fave
     case rewind
     case restore
-    /// "Delete permanently" tapped, fired just before the system dialog.
+    /// "Delete" tapped in Trash, fired just before the system dialog.
     case purgeArmed
     case purgeDone
     case queueDone

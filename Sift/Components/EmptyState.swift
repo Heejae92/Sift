@@ -10,7 +10,7 @@ import SwiftUI
 /// look the same and only the headline differs.
 ///
 /// `primaryAction` becomes the block's one filled action where the state has one: "Open Trash (N)"
-/// on `allDone` when N > 0, and "Back to sifting" on `trashEmpty`. The other three states have no
+/// on `allDone` when N > 0, and "Keep sifting" on `trashEmpty`. The other three states have no
 /// action and ignore it. The face is hidden from VoiceOver; the headline is the element that
 /// speaks for the block, and the CTA is a button with its own label.
 struct EmptyState: View {
@@ -75,7 +75,7 @@ struct EmptyState: View {
             return trashCount > 0 ? "Open Trash (\(trashCount))" : nil
         case .trashEmpty:
             // The product name is a verb in the copy (§12), so it comes from `Brand` (P-11, ADR-002).
-            return "Back to \(Brand.name.lowercased())ing"
+            return "Keep \(Brand.name.lowercased())ing"
         case .noScreenshots, .noFavorites, .noArchived:
             return nil
         }

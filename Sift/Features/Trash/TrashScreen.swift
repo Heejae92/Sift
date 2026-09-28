@@ -37,7 +37,7 @@ private struct TrashContent: View {
     @State private var model: TrashModel
     /// The screenshot open in the viewer.
     @State private var viewing: Screenshot?
-    /// "Delete permanently" tapped in the viewer: purged once the viewer has closed.
+    /// "Delete" tapped in the viewer: purged once the viewer has closed.
     @State private var viewerPurgeID: String?
     @State private var isPurgeSheetPresented = false
     /// From "Delete N permanently" until Photos answers: `purgeAll()` waits for the sheet to close,
@@ -167,12 +167,12 @@ private struct TrashContent: View {
             Button {
                 Task { await model.purgeOne(shot.id) }
             } label: {
-                Label { Text("Delete permanently") } icon: { DSIcon.trash.image }
+                Label { Text("Delete") } icon: { DSIcon.trash.image }
             }
         }
         // The menu's actions without a long press (§10 ThumbnailCell).
         .accessibilityAction(named: Text("Restore")) { model.restore(shot.id) }
-        .accessibilityAction(named: Text("Delete permanently")) {
+        .accessibilityAction(named: Text("Delete")) {
             Task { await model.purgeOne(shot.id) }
         }
         .transition(.opacity.animation(removal(at: index)))

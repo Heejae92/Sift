@@ -27,6 +27,9 @@ struct SwipeLegend: View {
                 row(entry)
             }
         }
+        // Hugs its widest row so the parent can centre it as a column; at accessibility sizes the
+        // rows need the full width to wrap, so the column goes edge to edge instead.
+        .fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: false)
         .foregroundStyle(block.ink)
     }
 

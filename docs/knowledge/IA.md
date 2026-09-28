@@ -98,7 +98,7 @@ Four primary screens, three subordinate surfaces, four system surfaces. Nothing 
 | L | **Library** | pushed | Review header icon | back; Viewer (library actions); Credits | `favoritesEmpty` (pink), `archiveEmpty` (lavender) |
 | V | **Viewer** | full-screen cover, black | a cell in Trash or Library | dismiss (swipe down, close) | two action sets, chosen by the presenting screen |
 | S | **Purge-all sheet** | sheet over Trash | the docked destructive button | "Keep them" back to Trash; "Delete N permanently" to the iOS delete dialog | — |
-| C | **Credits** | pushed | Library footer link; the Permission footer link before access is granted | back | — |
+| C | **Credits** | pushed | Library footer link | back | — |
 | X1 | iOS photo-library dialog | system | Permission CTA | Review, the limited interstitial, or the denied state | — |
 | X2 | Limited-library picker | system | "Pick more" on the limited interstitial | the interstitial with the new count | — |
 | X3 | iOS delete dialog | system | Viewer "Delete permanently" (one); the Purge-all sheet (all) | Trash, with cells removed or the "Not deleted" toast | — |
@@ -296,7 +296,7 @@ the alternative each one displaced is kept here for the record.
 |---|---|---|---|
 | A1 | A screenshot hearted in Photos before the app ever saw it counts as reviewed: it is a Favorite and never enters the queue | [§1](#1-object-model) rule 1; the queue is shorter on first launch | treat only app-set hearts as verdicts, which needs an app-side "seen" set and makes FAVE a no-op on an already-hearted card |
 | A2 | The limited interstitial shows on first grant and whenever the selected count differs from the one last acknowledged; otherwise limited access goes straight to Review | [§4](#4-launch-routing), [§8](#8-external-change) | show it on every launch under limited access |
-| A3 | The Credits screen is reached from the Library footer once access is granted; the Permission footer link is only visible before that | [§2](#2-screen-inventory) row C | a header overflow menu on Review, or the Settings bundle |
+| A3 | The Credits screen is reached from the Library footer once access is granted (the Permission screen's own link was removed by the owner on 2026-09-27) | [§2](#2-screen-inventory) row C | a header overflow menu on Review, or the Settings bundle |
 | A4 | The archive **list** is the truth and the album mirrors it: a deleted album is recreated, a hand-removed member is un-archived, an empty store adopts an existing album | [§7](#7-persistence), [§8](#8-external-change) | the album is the truth (`UI_DESIGN.md` §11.4 as written), which loses every archive verdict if the user deletes the album |
 
 Open and not assumed: whether the Review card offers pinch-to-zoom. `UI_DESIGN.md` gives zoom to

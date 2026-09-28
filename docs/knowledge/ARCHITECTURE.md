@@ -69,7 +69,7 @@ Sift/                              app target sources (XcodeGen `sources: [Sift]
   Resources/
     Assets.xcassets                LaunchBackground · AccentColor · icon catalog (Noun Project assets, when they land)
     Fonts/                         Pretendard-*.otf
-    SampleScreenshots/             six PNGs for DemoStack and for seeding a simulator
+    SampleScreenshots/             six real iOS screens (captured by SiftUITests/SampleCaptureTests) for DemoStack and for seeding a simulator
   PrivacyInfo.xcprivacy            no tracking, no collected data, no required-reason APIs
 SiftTests/                         Swift Testing · runs on the simulator against FakePhotoLibrary
 project.yml                        targets Sift, SiftTests · scheme Sift

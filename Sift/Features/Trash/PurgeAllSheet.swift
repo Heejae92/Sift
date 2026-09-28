@@ -49,8 +49,8 @@ struct PurgeAllSheet: View {
                 .dsType(.body)
                 .foregroundStyle(DSColor.ink2)
             VStack(alignment: .leading, spacing: DSSpace.s3) {
-                DSButton("Delete \(count) permanently", kind: .destructive, isFullWidth: true, action: onConfirm)
-                DSButton("Keep them", kind: .secondary, isFullWidth: true, action: onKeep)
+                DSButton("Delete \(count)", kind: .destructive, isFullWidth: true, action: onConfirm)
+                DSButton("Keep", kind: .secondary, isFullWidth: true, action: onKeep)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

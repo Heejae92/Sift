@@ -70,6 +70,9 @@ enum DSSize {
     /// AssetViewer: the scale a double-tap zooms to, and the ceiling a pinch can reach.
     static let viewerZoomDoubleTap: CGFloat = 2
     static let viewerZoomMax: CGFloat = 4
+    /// A color block gives its face this share of its height, centred; the face fills that region
+    /// as far as the width allows (owner, 2026-09-27: "아이콘은 화면의 반 이상 쓰도록").
+    static let blockFaceShare: CGFloat = 0.5
     static let focusRing: CGFloat = 3
     static let gridColumns: Int = 3
     static let stackDepth: Int = 3

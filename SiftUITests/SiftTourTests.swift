@@ -23,17 +23,18 @@ final class SiftTourTests: XCTestCase {
         app.launch()
 
         // Permission (only on a fresh install; a granted install goes straight to Review)
-        let cta = app.buttons["Show me the screenshots"]
+        let cta = app.buttons["Get started"]
         if cta.waitForExistence(timeout: 8) {
             snap("permission")
             cta.tap()
             let allow = springboard.buttons["Allow Full Access"]
-            if allow.waitForExistence(timeout: 12) { allow.tap() }
+            // After a fresh erase the photos backend can take a while to raise the dialog.
+            if allow.waitForExistence(timeout: 30) { allow.tap() }
         }
 
         // Review
         let trashHeader = topmost(app.buttons.matching(identifier: "Trash"))
-        XCTAssertTrue(trashHeader.waitForExistence(timeout: 12), "Review header did not appear")
+        XCTAssertTrue(trashHeader.waitForExistence(timeout: 30), "Review header did not appear")
         sleep(2)  // let the first cards decode
         snap("review")
 
@@ -50,9 +51,19 @@ final class SiftTourTests: XCTestCase {
         let rewind = app.buttons["Rewind"]
         if rewind.waitForExistence(timeout: 4), rewind.isEnabled { rewind.tap(); sleep(1); snap("review-after-rewind") }
 
+        // Sift the rest, so the all-done block is on the tour too
+        for _ in 0..<20 {
+            let next = frontCard()
+            guard next.waitForExistence(timeout: 2) else { break }
+            next.swipeLeft()
+            usleep(600_000)
+        }
+        sleep(2)
+        snap("all-done")
+
         // Trash
         topmost(app.buttons.matching(identifier: "Trash")).tap()
-        let purgeAll = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Delete all permanently'")).firstMatch
+        let purgeAll = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Delete all'")).firstMatch
         XCTAssertTrue(purgeAll.waitForExistence(timeout: 8), "Trash screen did not appear")
         sleep(1)
         snap("trash")
@@ -64,7 +75,7 @@ final class SiftTourTests: XCTestCase {
         }
         if purgeAll.waitForExistence(timeout: 4), purgeAll.isEnabled {
             purgeAll.tap()
-            let keep = app.buttons["Keep them"]
+            let keep = app.buttons["Keep"]
             if keep.waitForExistence(timeout: 6) { snap("purge-sheet"); keep.tap() }
         }
         goBack()

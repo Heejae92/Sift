@@ -103,8 +103,10 @@ in two files has already drifted once.
 
 **P-13 · Only the four modifiers.** Type is applied with `.dsType(_:)`, shadow with
 `.dsShadow(_:)`, haptics with `.dsHaptic(_:trigger:)`, focus with
-`.dsFocusRing(_:cornerRadius:color:)`. No view calls `.font(...)` with a literal, no view calls
-`.shadow(...)` directly, and nothing touches a feedback generator. Each modifier is the single place
+`.dsFocusRing(_:cornerRadius:color:)`. No view calls `.font(...)` with a literal: the two
+Font-returning functions a view may hand to `.font` are `DSTextRole.stampFont(size:)` (fed by a
+`@ScaledMetric`, P-20) and `DSTextRole.faceFont(size:)` (fed by measured geometry, for the face on a
+color block). No view calls `.shadow(...)` directly, and nothing touches a feedback generator. Each modifier is the single place
 where a cross-cutting detail lives — `compositingGroup()` before a shadow, the 90 ms second pulse
 for FAVE — and bypassing it loses that detail silently.
 

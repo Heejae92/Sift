@@ -139,6 +139,14 @@ extension DSTextRole {
     static func stampFont(size: CGFloat) -> Font {
         DSFont.displayFixed(DSFont.displayBlack, size: min(size, stampMaxSize))
     }
+
+    /// The display face at a size taken from measured geometry, for a typographic face that fills a
+    /// region (`BlockView`): the view renders it at the region's height and then only ever shrinks
+    /// it to fit, which keeps the glyph crisp where scaling a small text up would blur it. Tracked
+    /// out like every display role (30/1000 em). With `stampFont(size:)`, the only Font-returning
+    /// functions a view may hand to `.font` (P-13).
+    static func faceFont(size: CGFloat) -> Font { DSFont.displayFixed(DSFont.displayBlack, size: size) }
+    static func faceTracking(size: CGFloat) -> CGFloat { size * 0.03 }
 }
 
 extension View {

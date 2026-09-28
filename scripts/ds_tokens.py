@@ -320,10 +320,11 @@ DECLARATION_ONLY = {
     "--size-viewer-zoom-max": "same: nothing in the guide pinches",
     "--motion-demo-card": "the guide's deck demo is driven by the visitor, not by a loop",
     "--motion-demo-pause": "same: no auto-loop in the guide",
+    "--size-block-face-share": "the guide's block tiles are swatches, not screens; the app gives the face the top half",
 }
 
 UNITLESS = {"stackScaleStep", "downFollow", "upScale", "promoteAt", "stampFaveRaise", "stampPopScale", "disabled",
-            "viewerZoomDoubleTap", "viewerZoomMax",
+            "viewerZoomDoubleTap", "viewerZoomMax", "blockFaceShare",
             "gridColumns", "stackDepth", "desktopColumns", "mobileColumns"}
 ENUM_PREFIX = {"DSSpace": "space", "DSRadius": "radius", "DSSize": "size", "DSSwipe": "swipe",
                "DSGrid": "grid", "DSOpacity": "opacity"}

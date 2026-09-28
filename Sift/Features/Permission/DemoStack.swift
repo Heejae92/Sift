@@ -332,7 +332,8 @@ extension DemoStack {
         var sector: SwipeSector?
     }
 
-    /// Three of the six bundled sample screenshots — Notes, Chat, Map — one per verdict in loop order.
+    /// Three of the six bundled sample screenshots (real iOS screens captured on a simulator), one
+    /// per verdict in loop order.
     private enum Samples {
         static let names = ["sample-1", "sample-2", "sample-3"]
 

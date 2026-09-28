@@ -7,15 +7,15 @@ import SwiftUI
 ///
 /// Every action calls the presenter and then closes the viewer, because each one takes the
 /// screenshot out of the grid it was opened from. All of them are rung 0 of ADR-009 except
-/// "Delete permanently", whose presenter waits for the viewer to close before the iOS dialog.
+/// "Delete", whose presenter waits for the viewer to close before the iOS dialog.
 ///
 /// Double tap only zooms back OUT. §10 asks for a 2× zoom in and pinch needs a ceiling, and neither
 /// factor is a token yet, so neither is typed here (P-12). Pinch is floored at fit and has no ceiling.
 struct AssetViewer: View {
     enum Context {
-        /// From Trash: Restore and Delete permanently.
+        /// From Trash: Restore and Delete.
         case trash(onRestore: () -> Void, onDelete: () -> Void)
-        /// From Library: Move to Archive / Move to Favorites, and Trash.
+        /// From Library: Archive / Favorite, and Trash.
         case library(segment: LibrarySegment, onMove: () -> Void, onTrash: () -> Void)
     }
 
@@ -142,7 +142,7 @@ struct AssetViewer: View {
         switch context {
         case .trash(let onRestore, let onDelete):
             DSButton("Restore", kind: .secondary) { run(onRestore) }
-            DSButton("Delete permanently", kind: .destructive) { run(onDelete) }
+            DSButton("Delete", kind: .destructive) { run(onDelete) }
         case .library(let segment, let onMove, let onTrash):
             DSButton(segment.moveTitle, kind: .secondary) { run(onMove) }
             DSButton("Trash", kind: .secondary) { run(onTrash) }  // reversible (rung 0), so not destructive (§12)
@@ -332,6 +332,6 @@ struct AssetViewer: View {
 extension LibrarySegment {
     /// The Library action set's move names its destination (UI_DESIGN §11.4).
     var moveTitle: String {
-        self == .favorites ? "Move to Archive" : "Move to Favorites"
+        self == .favorites ? "Archive" : "Favorite"
     }
 }

@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// UI_DESIGN §11.1 "Permission": the two-step gate. The app explains itself first and asks second;
-/// the system dialog appears only when "Show me the screenshots" is tapped, never on launch
+/// the system dialog appears only when "Get started" is tapped, never on launch
 /// (ADR-010). `RootView` shows this screen while authorization is not usable (IA §4) and re-reads
 /// authorization on every return to the foreground; the screen picks its own state from
 /// `catalog.authorization`.
@@ -23,20 +23,15 @@ struct PermissionScreen: View {
     /// Directions the user has completed on the demo; each checks its legend row.
     @State private var tried: Set<Verdict> = []
     @State private var isRequesting = false
-    @State private var showsCredits = false
     /// "Not now" was tapped on the denied block.
     @State private var settingsDeferred = false
 
     var body: some View {
-        NavigationStack {
-            Group {
-                switch gate {
-                case .onboarding: onboarding
-                case .denied: denied
-                }
+        Group {
+            switch gate {
+            case .onboarding: onboarding
+            case .denied: denied
             }
-            .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(isPresented: $showsCredits) { CreditsScreen() }
         }
         // The grant haptic and the status-bar scheme for the violet denied block both live on
         // RootView: this screen is gone by the time access is usable, and a child's
@@ -83,27 +78,23 @@ struct PermissionScreen: View {
     }
 
     private func onboardingCopy(_ block: DSBlock) -> some View {
-        VStack(alignment: .leading, spacing: DSSpace.s5) {
+        VStack(spacing: DSSpace.s5) {
             Text("\(Brand.name) your screenshots.")
                 .dsType(.headline)
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
                 .accessibilitySortPriority(3)
             SwipeLegend(checked: tried, on: block)
                 .accessibilityElement(children: .contain)
                 .accessibilitySortPriority(1)
-            VStack(alignment: .leading, spacing: 0) {
-                DSButton("Show me the screenshots", kind: .blockCTA(block), isLoading: isRequesting) {
-                    requestAccess()
-                }
-                .accessibilitySortPriority(2)
-                DSButton("Icons", kind: .blockText(block)) {
-                    showsCredits = true
-                }
+            DSButton("Get started", kind: .blockCTA(block), isLoading: isRequesting) {
+                requestAccess()
             }
+            .accessibilitySortPriority(2)
         }
         .foregroundStyle(block.ink)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
         .padding(.horizontal, DSGrid.mobileMargin)
         .padding(.bottom, DSSpace.s4)
         .accessibilityElement(children: .contain)

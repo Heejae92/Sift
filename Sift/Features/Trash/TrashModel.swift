@@ -48,12 +48,9 @@ final class TrashModel {
         return (["Trash", "\(count) \(noun)"] + [sizeText].compactMap { $0 }).joined(separator: " · ")
     }
 
-    /// "Delete all permanently (27 · 48 MB)". The count is always there (P-20); the size joins it
-    /// on the same terms as in the header.
-    var purgeButtonTitle: String {
-        let scope = (["\(items.count)"] + [sizeText].compactMap { $0 }).joined(separator: " · ")
-        return "Delete all permanently (\(scope))"
-    }
+    /// "Delete all (27)": the count is always there (§12); the size stays in the header, so the
+    /// button reads at a glance (owner, 2026-09-27: "버튼명 짧고 명확하게").
+    var purgeButtonTitle: String { "Delete all (\(items.count))" }
 
     /// `ByteCountFormatter` in `.file` style; nil while any size is still unread, and for an empty
     /// trash, which has no size to name.

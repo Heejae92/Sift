@@ -671,6 +671,7 @@ spacing than a content grid.
 | `DSSize.stampFaveRaise` | 0.12 | The FAVE stamp's centre sits this fraction of the card height above the card's centre |
 | `DSSize.viewerZoomDoubleTap` | 2 | AssetViewer: the scale a double-tap zooms to, about the tapped point |
 | `DSSize.viewerZoomMax` | 4 | AssetViewer: the ceiling a pinch can reach; a pinch below fit returns to fit |
+| `DSSize.blockFaceShare` | 0.5 | A color block gives its face this share of its height, centred; the face fills it as far as the width allows |
 | `DSSize.iconVerdict` | 28 | Glyph inside a verdict button |
 | `DSSize.iconChrome` | 24 | Header and toolbar glyphs |
 | `DSSize.iconInline` | 20 | Glyphs set inside a line of text |
@@ -947,7 +948,7 @@ Impact **weight encodes direction**, so eyes-off swiping still confirms which ve
 | Swipe up committed | `.fave` | `.impact(weight: .light)` ×2 | On commit, a heartbeat |
 | Rewind | `.rewind` | `.impact(weight: .light)` | When the card starts coming back |
 | Restore from Trash | `.restore` | `.success` | After the asset returns to the queue |
-| "Delete permanently" tapped | `.purgeArmed` | `.warning` | Fired just before the iOS dialog is presented |
+| "Delete" tapped | `.purgeArmed` | `.warning` | Fired just before the iOS dialog is presented |
 | Permanent deletion finished | `.purgeDone` | `.success` | After `deleteAssets` reports success |
 | Queue finished | `.queueDone` | `.success` | When the last card leaves |
 | Photo access granted | `.permissionGranted` | `.success` | After the system dialog returns an authorized status |
@@ -1039,7 +1040,7 @@ stores the source `url` so a reader can find the original.
    the array is empty, and the screen then says that no third-party icons ship yet — which is true
    today.
 
-The credits screen is reachable from the onboarding footer. It is a list of `subhead` title lines
+The credits screen is reachable from the Library footer. It is a list of `subhead` title lines
 with `caption` author lines, each row opening the stored `url`.
 
 ---
@@ -1052,7 +1053,9 @@ app has no image pipeline, no export step, and no light/dark artwork problem.
 ### Typographic faces
 
 A face is **one** glyph borrowed from a world script, framed by round parentheses, set in
-`DSTextRole.display` on a color block, centered: `(ᐛ)`. The parentheses are the head; the glyph
+the display face on a color block, centered and filling the top `DSSize.blockFaceShare` of the block
+(`BlockView` sets it with `DSTextRole.faceFont(size:)` at the region's height and shrinks it to fit,
+so the glyph stays crisp): `(ᐛ)`. The parentheses are the head; the glyph
 is the eyes and the mouth at once, so a face is one line, not two. Seven blocks, seven scripts, no
 glyph used twice. Only the brackets come from the display face; each centre glyph is drawn by
 whichever system font carries its script, and the weight contrast between a bold Latin bracket and a
@@ -1245,14 +1248,14 @@ Each entry gives anatomy, the tokens it consumes, its states, and its accessibil
 - **Anatomy.** Full-screen black with the asset fitted, a top bar carrying `DSIcon.close`, and a
   bottom action bar. Pinch to zoom up to `DSSize.viewerZoomMax`, double-tap to `DSSize.viewerZoomDoubleTap`
   about the tapped point (and back to fit), swipe down to dismiss. Two action sets only:
-  from Trash, Restore and Delete permanently; from Library, Move to Archive / Move to Favorites and
+  from Trash, Restore and Delete; from Library, Archive / Favorite and
   Trash. Trash from the viewer is reversible (rung 0), so its button is `.secondary`; only "Delete
   permanently" is `.destructive` (§12).
 - **Tokens.** `viewerBackdrop`, `onImage`, `DSSize.iconChrome`, `DSTextRole.label`, `DSRadius.pill`,
   `DSMotion.dur3`, `DSLayer.modal`, `DSSize.viewerZoomDoubleTap`, `DSSize.viewerZoomMax`.
 - **States.** `loading` · `presented` · `zoomed` · `dismissing`.
 - **Accessibility.** The image carries its cell's label; action buttons are `DSSize.tapMin` or larger;
-  "Delete permanently" carries the destructive trait.
+  "Delete" carries the destructive trait.
 
 ### PurgeAllSheet
 
@@ -1303,7 +1306,8 @@ Each entry gives anatomy, the tokens it consumes, its states, and its accessibil
   three verdicts at `DSMotion.demoCard` each with a `DSMotion.demoPause` rest, driven by the real gesture code with synthetic input so the demo
   cannot drift from the product. The user can interrupt it and swipe for real; a completed direction
   gets a `DSIcon.check` in the legend. Under Reduce Motion the stack becomes three static panels.
-  Below it sit the headline, `SwipeLegend`, the CTA, and a footer link to the credits screen.
+  Below it sit the headline, `SwipeLegend` and the CTA, centred. No link to Credits here: Credits
+  is reached from the Library footer only (A3, owner's decision of 2026-09-27).
 - **SwipeLegend.** Three rows: Left / TRASH / the app's Trash until you empty it · Right / ARCHIVE /
   the `Brand.archiveAlbumTitle` album in Photos · Up / FAVE / your Photos favorites.
 - **Tokens.** `DSBlock.onboarding` (`trash.main` fill, `ink` ink, so `ctaFill` is `ink` and
@@ -1322,7 +1326,7 @@ primary and destructive take `DSShadow.floating`, and only when docked over cont
 | Kind | Fill | Label | Radius | Used for |
 |---|---|---|---|---|
 | primary | `accent` | `onAccent`, `DSTextRole.label` | `DSRadius.pill` | The one main action on a white screen |
-| secondary | `surfaceRaised` | `ink`, `DSTextRole.labelSmall` | `DSRadius.md` | The second action on a white surface: "Keep them", Cancel |
+| secondary | `surfaceRaised` | `ink`, `DSTextRole.labelSmall` | `DSRadius.md` | The second action on a white surface: "Keep", Cancel |
 | destructive | `trash.main` | `ink`, `DSTextRole.label` | `DSRadius.pill` | "Delete all permanently", "Delete N permanently" |
 | block CTA | `DSBlock.ctaFill`, the block's own ink | `DSBlock.ctaLabel`, `DSTextRole.label` | `DSRadius.pill` | The one filled action on a full-bleed color block |
 | block text action | none | the block's `ink`, `DSTextRole.label` | `DSRadius.pill`, for the focus ring only | The second action on a block: "Pick more", "Not now" |
@@ -1407,7 +1411,7 @@ dialog second. Permission is requested on tap, never on launch (ADR-010).
 | Top 55 % | `DemoStack` | looping · interrupted · reduced (three static panels) | — |
 | Headline | `DSTextRole.headline` on `DSBlock.onboarding` | — | `"\(Brand.name) your screenshots."` |
 | Legend | `SwipeLegend` | three rows, each unchecked or checked | Left → TRASH · Right → ARCHIVE · Up → FAVE |
-| CTA | block CTA on `DSBlock.onboarding` | default · pressed | `"Show me the screenshots"` |
+| CTA | block CTA on `DSBlock.onboarding` | default · pressed | `"Get started"` |
 | Footer | link | — | credits screen |
 
 On tap the app calls `requestAuthorization(for: .readWrite)`. Three outcomes:
@@ -1469,8 +1473,8 @@ rather than showing an empty queue.
 |---|---|---|---|
 | Header | `DSTextRole.title` | — | `"Trash · 27 items · 48 MB"` |
 | Body | grid of `ThumbnailCell(.trash)` | populated · removing · empty | most recently trashed first |
-| Tap / long press | `AssetViewer` or context menu | — | `"Restore"` · `"Delete permanently"` |
-| Docked | destructive button | default · pending · disabled when empty | `"Delete all permanently (27 · 48 MB)"` |
+| Tap / long press | `AssetViewer` or context menu | — | `"Restore"` · `"Delete"` |
+| Docked | destructive button | default · pending · disabled when empty | `"Delete all (27)"` |
 | Empty | `EmptyState` on `DSBlock.trashEmpty` | — | `"Trash is empty. Squeaky."` |
 
 `DSSize.gridColumns` columns, `DSSize.thumbnailGutter` gutter, square center crops. There is no
@@ -1485,10 +1489,10 @@ and `DSHaptic.purgeDone` fires.
 
 - Title: `"Delete 27 screenshots permanently?"`
 - Body: `"They leave \(Brand.name) for good and go to Photos' Recently Deleted for 30 days. iOS will double-check — that's expected."`
-- Buttons: `"Delete 27 permanently"` · `"Keep them"`
+- Buttons: `"Delete 27"` · `"Keep"`
 
 The sheet names the count and not the size. The size is on the docked button that opens it,
-`"Delete all permanently (27 · 48 MB)"`, which is where the user is still deciding whether to open
+`"Delete all (27)"`, which is where the user is still deciding whether to open
 the sheet at all; inside the sheet the scope is already all of them, and what the destructive label
 owes is the count, so that it stays unambiguous out of context
 ([§10 PurgeAllSheet](#purgeallsheet)).
@@ -1529,7 +1533,7 @@ Rung 0 has no confirmation on purpose. A confirmation on every swipe would make 
 unusable, and everything at rung 0 is undoable by design.
 
 **Correction, 2026-09-24.** Rung 2 used to read "in-app sheet with count and size". The sheet has
-three strings, `"Delete 27 screenshots permanently?"`, its body, and `"Delete 27 permanently"`
+three strings, `"Delete 27 screenshots permanently?"`, its body, and `"Delete 27"`
 ([§11.3](#113-trash), [§12](#12-copy-and-voice)), and none of them carries a size; the size belongs to
 the docked button that opens the sheet. `design-system.html` carries the same error in the caption
 under its sheet mock, which says the sheet "names the count and the size" while the mock it captions
@@ -1540,8 +1544,8 @@ renders the count alone. That file is outside this document's scope; the string 
 
 ## 12. Copy and voice
 
-**Verbs first.** A button says what it does: "Show me the screenshots", "Open Settings", "Pick
-more", "Keep them". Not "Continue", not "OK".
+**Verbs first.** A button says what it does: "Get started", "Open Settings", "Pick
+more", "Keep". Not "Continue", not "OK".
 
 **Playful only in titles and empty states.** "Inbox zero, screenshot edition." and "Trash is empty.
 Squeaky." are allowed because nothing is at stake there. A destructive button is never playful.
@@ -1551,7 +1555,7 @@ because the destination is the Trash screen, and "Delete" is reserved for the ac
 undone (ADR-013). No string uses "delete" for a reversible action or "trash" for an irreversible
 one.
 
-**Destructive buttons carry a number.** "Delete all permanently (27 · 48 MB)", "Delete 27
+**Destructive buttons carry a number.** "Delete all (27)", "Delete 27
 permanently". A number tells the user the scale of what they are about to lose without their having
 to count.
 
@@ -1567,7 +1571,7 @@ Example strings, all from the screens above:
 | Context | String |
 |---|---|
 | Permission headline | `"\(Brand.name) your screenshots."` |
-| Permission CTA | `"Show me the screenshots"` |
+| Permission CTA | `"Get started"` |
 | Limited interstitial | `"You picked 14 screenshots. \(Brand.name) only sees those."` |
 | Limited actions | `"Pick more"` · `"\(Brand.name) these 14"` |
 | Denied | `"\(Brand.name) can't see your screenshots yet."` · `"Open Settings"` · `"Not now"` |
@@ -1575,18 +1579,19 @@ Example strings, all from the screens above:
 | All done | `"Inbox zero, screenshot edition."` · `"Trash is holding 27 — empty it whenever."` · `"Open Trash (27)"` |
 | No screenshots | `"No screenshots. Honestly, impressive."` |
 | Trash header | `"Trash · 27 items · 48 MB"` |
-| Purge-all button | `"Delete all permanently (27 · 48 MB)"` |
-| Purge-all sheet | `"Delete 27 screenshots permanently?"` · `"They leave \(Brand.name) for good and go to Photos' Recently Deleted for 30 days. iOS will double-check — that's expected."` · `"Delete 27 permanently"` · `"Keep them"` |
+| Purge-all button | `"Delete all (27)"` (the size stays in the header) |
+| Purge-all sheet | `"Delete 27 screenshots permanently?"` · `"They leave \(Brand.name) for good and go to Photos' Recently Deleted for 30 days. iOS will double-check — that's expected."` · `"Delete 27"` · `"Keep"` |
 | Trash empty | `"Trash is empty. Squeaky."` |
 | Delete failure | `"Couldn't delete 3. Try again."` |
 | Delete cancelled | `"Not deleted"` |
 | Library empty | `"No faves yet. Swipe up on the good ones."` · `"Nothing archived. Swipe right to stash keepers."` |
 | VoiceOver announcement | `"Trashed. 13 of 340"` · `"Rewound. 12 of 340"` |
-| Footer link to Credits (Permission, Library) | `"Icons"` |
+| Footer link to Credits (Library) | `"Icons"` |
 | Legend row, done | value `"Done"` |
 | Denied, after "Not now" | `"Photos access for \(Brand.name) is set in Settings."` |
 | Limited, one screenshot | `"You picked 1 screenshot. \(Brand.name) only sees that one."` · `"\(Brand.name) this one"` |
-| Trash empty CTA | `"Back to sifting"` (built from `Brand.name`; recheck on a rename) |
+| Trash empty CTA | `"Keep sifting"` (built from `Brand.name`; recheck on a rename) |
+| Viewer actions | `"Restore"` · `"Delete"` from Trash; `"Archive"` / `"Favorite"` · `"Trash"` from Library |
 | Loading button, VoiceOver value | `"In progress"` |
 | Credits, no entries | `"No third-party icons ship yet."` |
 
@@ -1775,6 +1780,7 @@ dropped `.main`.
 | `DSSize.stampFaveRaise` | `--size-stamp-fave-raise` | `0.12` |
 | `DSSize.viewerZoomDoubleTap` | `--size-viewer-zoom-double-tap` | `2` |
 | `DSSize.viewerZoomMax` | `--size-viewer-zoom-max` | `4` |
+| `DSSize.blockFaceShare` | `--size-block-face-share` | `0.5` |
 | `DSSize.iconVerdict` | `--size-icon-verdict` | `28px` |
 | `DSSize.iconChrome` | `--size-icon-chrome` | `24px` |
 | `DSSize.iconInline` | `--size-icon-inline` | `20px` |
@@ -1944,5 +1950,5 @@ the expressive palette to serve as blocks, `onboarding` on `trash.main` and `lim
 10. **The demo's height.** §11.1 says "the top 55 %"; no layout-fraction token exists, so the built demo takes whatever height the copy leaves (about 58 % on an iPhone 17 at the default text size) and steps aside at accessibility sizes.
 11. **Implementer values awaiting the owner's eye.** `DSMotion.stagger` 0.02 s (ADR-028), the all-done burst as three verdict glyphs (ADR-029), `DSSize.viewerZoomMax` 4 (ADR-030), and the demo's card size (derived from the product card, about 179 × 375 pt).
 12. **Secondary button shape.** §10 gives `.secondary` `DSRadius.md` and `DSTextRole.labelSmall`; the guide draws it as a pill in `.label`. The app follows §10. One of the two must change.
-13. **Pill labels at accessibility sizes.** A `DSRadius.pill` button whose label wraps to three lines has its first and last lines clipped by the capsule's ends (seen on "Delete all permanently (27 · 48 MB)" at AX5). A cap on the radius once the label wraps is the likely fix.
+13. **Pill labels at accessibility sizes.** A `DSRadius.pill` button whose label wraps to three lines has its first and last lines clipped by the capsule's ends (seen on "Delete all (27)" at AX5). A cap on the radius once the label wraps is the likely fix.
 14. **Icons on buttons.** §8 lists glyphs for the viewer's actions, but `DSButton` has no icon slot; the viewer's actions are text only.
