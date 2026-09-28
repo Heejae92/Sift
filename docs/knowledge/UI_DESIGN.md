@@ -24,7 +24,7 @@
 > discount every hit the same command reports for `'Sift/'`, plus the one path join named above. The
 > lint does not check any of this; it checks `DesignSystem/` only.
 
-v1.5 · 2026-09-28 · light-only · iOS 17 SwiftUI
+v1.6 · 2026-09-28 · light-only · iOS 17 SwiftUI
 
 The product is a screenshot triage app. It shows one screenshot at a time as a card, newest
 unreviewed first, with a progress counter. Swipe left sends it to the app's own Trash, right to a
@@ -1412,14 +1412,16 @@ dialog second. Permission is requested on tap, never on launch (ADR-010).
 | Headline | `DSTextRole.headline` on `DSBlock.onboarding` | — | `"\(Brand.name) your screenshots."` |
 | Legend | `SwipeLegend` | three rows, each unchecked or checked | Left → TRASH · Right → ARCHIVE · Up → FAVE |
 | CTA | block CTA on `DSBlock.onboarding` | default · pressed | `"Get started"` |
-| Footer | link | — | credits screen |
+
+There is no footer link to Credits: the owner removed it on 2026-09-27, and Credits is reached from
+the Library footer (ADR-031, `IA.md` A3).
 
 On tap the app calls `requestAuthorization(for: .readWrite)`. Three outcomes:
 
 | Outcome | Block | Copy | Actions |
 |---|---|---|---|
 | Full | — | — | Go straight to Review; `DSHaptic.permissionGranted` |
-| Limited | `DSBlock.limited` (`fave.soft`) | `"You picked 14 screenshots. \(Brand.name) only sees those."` | `"\(Brand.name) these 14"` is the filled block CTA · `"Pick more"` is the block text action (`presentLimitedLibraryPicker`) |
+| Limited | `DSBlock.limited` (`fave.soft`) | `"You picked 14 screenshots. \(Brand.name) only sees those."` When some of them are unreviewed and under 30 days old, one body line under it: `"Screenshots wait 30 days before \(Brand.name) asks. 3 are ready now."`, or with none ready `"Screenshots wait 30 days before \(Brand.name) asks. The first is ready Oct 27."` (`"It's ready Oct 27."` when only one waits). When nothing picked is a screenshot: `"None of these are screenshots."` (ADR-033) | `"\(Brand.name) these 14"` is the filled block CTA; when some wait it counts the ready ones, `"\(Brand.name) these 3"`, and with none ready it reads `"Continue"` · `"Pick more"` is the block text action (`presentLimitedLibraryPicker`). When nothing picked is a screenshot the two swap roles: `"Pick more"` is the filled CTA and `"Continue"` the text action |
 | Denied | `DSBlock.denied` (`violet`, white ink) | `"\(Brand.name) can't see your screenshots yet."` | `"Open Settings"` is the filled block CTA, white on violet · `"Not now"` is the block text action |
 
 The denied state re-checks authorization whenever `scenePhase` becomes `.active`, so a user who
@@ -1555,7 +1557,10 @@ renders the count alone. That file is outside this document's scope; the string 
 ## 12. Copy and voice
 
 **Verbs first.** A button says what it does: "Get started", "Open Settings", "Pick
-more", "Keep". Not "Continue", not "OK".
+more", "Keep". Not "Continue", not "OK". The limited-access block is the one exception on record,
+in two places: its CTA reads "Continue" when none of the picked screenshots is old enough yet, and
+its text action reads "Continue" when nothing picked is a screenshot. In both there is nothing to
+act on, so the button only moves on (ADR-033).
 
 **Playful only in titles and empty states.** "Inbox zero, screenshot edition." and "Trash is empty.
 Squeaky." are allowed because nothing is at stake there. A destructive button is never playful.
@@ -1601,6 +1606,9 @@ Example strings, all from the screens above:
 | Legend row, done | value `"Done"` |
 | Denied, after "Not now" | `"Photos access for \(Brand.name) is set in Settings."` |
 | Limited, one screenshot | `"You picked 1 screenshot. \(Brand.name) only sees that one."` · `"\(Brand.name) this one"` |
+| Limited, some waiting | `"Screenshots wait 30 days before \(Brand.name) asks. 3 are ready now."` (`"1 is ready now."`) · CTA `"\(Brand.name) these 3"` (`"\(Brand.name) this one"`) (ADR-033) |
+| Limited, none ready | `"Screenshots wait 30 days before \(Brand.name) asks. The first is ready Oct 27."`, or `"… It's ready Oct 27."` when only one waits, the date as in the all-done line · CTA `"Continue"` (ADR-033) |
+| Limited, no screenshots picked | `"None of these are screenshots."` · filled CTA `"Pick more"` · text action `"Continue"` (ADR-033) |
 | Trash empty CTA | `"Keep sifting"` (built from `Brand.name`; recheck on a rename) |
 | Viewer actions | `"Restore"` · `"Delete"` from Trash; `"Archive"` / `"Favorite"` · `"Trash"` from Library |
 | Loading button, VoiceOver value | `"In progress"` |
@@ -1965,3 +1973,4 @@ the expressive palette to serve as blocks, `onboarding` on `trash.main` and `lim
 | v1.3 | 2026-09-24 | Propagation of the `DSBlock` and `DSFont` changes. §9 and §10: the block CTA is `DSBlock.ctaFill` with `DSBlock.ctaLabel` and the block focus ring is `DSBlock.focusRing`, replacing the free choice between a navy and a white pill and replacing `DSColor.focus` on a block. §1: the contrast block regenerated at 43 pairs, 0 failures, and the 60/30/10 rule corrected to four places. §2: `DSFont.availableDisplayNames` replaces `displayAvailability`, and the `0.06em` stamp tracking recorded as a rounding of 0.0625 em. §13: the cobalt exception stated. §14: the CSS-name note recounted. §0: the type list completed and `README.md` removed from the prose that names the product. |
 | v1.4 | 2026-09-24 | Citation and reconciliation pass. Every cross-file line citation and every contrast-row number replaced by a token pair, a quoted `Use` string, a selector or a recorded command; the product-name tally recounted (`design-system.html` 10, not 8) and restated as a rule; §9 and §10 reconciled on one filled action per block, with the second action bare text in the block's ink and a fifth button kind for it; §5 restated for `.dsFocusRing`'s `color:` parameter and the measurement that covers a block; rung 2 of the destructive ladder corrected to the count alone; §14's `max-width` parenthesis corrected from four queries to eight properties; `ink2` 6.19 and `inkMuted` 4.77 folded in from the `DSColor` comments. |
 | v1.5 | 2026-09-28 | ADR-032 in §11.2 and §12: Review asks only about screenshots at least 30 days old, the counter counts those, and the all-done block adds "Next screenshot: Oct 12." on its own line. §15 items 9 to 14, which had landed below this table, moved back into §15. The app-phase edits of 2026-09-27 (ADR-028 to ADR-031) are recorded in those ADRs and have no row here. |
+| v1.6 | 2026-09-28 | ADR-033 in §11.1 and §12: when some picked screenshots are unreviewed and under 30 days old, the limited-access block adds one line saying they wait and how many are ready now, or the day the first one is ("It's ready" when only one waits); the CTA counts the ready ones, or reads "Continue" when none is ready. When nothing picked is a screenshot, the block says so, "Pick more" takes the fill and "Continue" is the text action. §12 records the two "Continue" labels as the exception to "Verbs first". §11.1's footer row to Credits, stale since ADR-031, is replaced by a note that there is none. |

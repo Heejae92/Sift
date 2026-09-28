@@ -75,14 +75,23 @@ struct EmptyState: View {
 
     /// The all-done body (§11.2, ADR-032): the Trash line when Trash holds anything, then
     /// "Next screenshot: Oct 12." when a screenshot is waiting, each on its own line; nil when neither
-    /// applies. The date is a `Date.FormatStyle`, month abbreviated and day, in `locale`.
-    static func allDoneBody(trashCount: Int, nextArrival: Date?, locale: Locale = .autoupdatingCurrent) -> String? {
+    /// applies. The date is `arrivalDay`, in `locale` and `timeZone`.
+    static func allDoneBody(trashCount: Int, nextArrival: Date?, locale: Locale = .autoupdatingCurrent,
+                            timeZone: TimeZone = .autoupdatingCurrent) -> String? {
         var lines: [String] = []
         if trashCount > 0 { lines.append("Trash is holding \(trashCount) — empty it whenever.") }
         if let nextArrival {
-            lines.append("Next screenshot: \(nextArrival.formatted(.dateTime.month(.abbreviated).day().locale(locale))).")
+            lines.append("Next screenshot: \(arrivalDay(nextArrival, locale: locale, timeZone: timeZone)).")
         }
         return lines.isEmpty ? nil : lines.joined(separator: "\n")
+    }
+
+    /// The day a waiting screenshot comes due, as the copy names it: "Oct 12", a `Date.FormatStyle`
+    /// with the month abbreviated and the day, in `locale` and `timeZone`. Shared with the
+    /// limited-access interstitial (ADR-033), so the two never drift.
+    static func arrivalDay(_ date: Date, locale: Locale = .autoupdatingCurrent,
+                           timeZone: TimeZone = .autoupdatingCurrent) -> String {
+        date.formatted(Date.FormatStyle(locale: locale, timeZone: timeZone).month(.abbreviated).day())
     }
 
     private var ctaTitle: String? {

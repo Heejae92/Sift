@@ -73,7 +73,7 @@ Sift/                              app target sources (XcodeGen `sources: [Sift]
     Fonts/                         Pretendard-*.otf
     SampleScreenshots/             six real iOS screens (captured by SiftUITests/SampleCaptureTests) for DemoStack and for seeding a simulator
   PrivacyInfo.xcprivacy            no tracking, no collected data, no required-reason APIs
-SiftTests/                         Swift Testing · runs on the simulator against FakePhotoLibrary
+SiftTests/                         Swift Testing · runs on the simulator against FakePhotoLibrary · SampleSeedTests (opt-in seed tool)
 SiftUITests/                       XCTest UI tests: SiftTourTests (the screenshot tour) · SampleCaptureTests (opt-in capture tool)
 project.yml                        targets Sift, SiftTests, SiftUITests · scheme Sift
 ```
@@ -237,6 +237,8 @@ Two test targets run on the simulator, both hosted by the app `Sift`.
 | `ReviewModelTests` | loading → reviewing / allDone / noScreenshots; commit → promote → next card; single-step rewind; new screenshot joins behind the front card; only waiting screenshots is allDone, not noScreenshots, with no burst; finishing the queue while others wait is a finished queue; a screenshot that comes due joins behind the front card |
 | `ReviewPolicyTests` | `-SiftMinimumAgeDays` counts only as a whole number of days, 0 or more |
 | `ReviewPresentationTests` | the all-done body lines and the header counter's mapping, as pure functions |
+| `LimitedInterstitialTests` | the limited-access copy: nothing waiting as before; some ready, the CTA counting them and no date; none ready, the day ("It's ready" when one waits) and "Continue"; nothing picked a screenshot, "Pick more" filled and "Continue" as text; singular and plural (ADR-033) |
+| `SampleSeedTests` | not a test: the opt-in seed tool below, simulator builds only, skipped unless `SIFT_SEED_SAMPLES=1` |
 
 Clocks: every `CatalogTests` catalog is built by `make()` on a `TickingClock`, which starts 90 days
 after the 2023 fixtures, except the boundary test, which pins a fixed reference date.
@@ -256,8 +258,22 @@ local scheme edit adding `-SiftMinimumAgeDays` would otherwise change what the t
   screenshots from the simulator's built-in apps. It is skipped unless `SIFT_CAPTURE_SAMPLES=1` is in
   the runner's environment, passed on the `xcodebuild` line as `TEST_RUNNER_SIFT_CAPTURE_SAMPLES=1`.
 
+Its companion lives in `SiftTests`, because it needs the app's own Photos access rather than a UI:
+
+- `SampleSeedTests` is the other development tool (ADR-033): it adds the six bundled samples to the
+  simulator's Photos library with fixed creation dates in August 2026, 35 to 58 days before
+  2026-09-28, so Review has real screenshots that are due. It compiles into simulator builds only
+  (`#if targetEnvironment(simulator)`), so a test build for a device does not contain it. It is
+  disabled unless `SIFT_SEED_SAMPLES=1` is in the test process's environment, which `xcodebuild`
+  passes on from its own environment as `TEST_RUNNER_SIFT_SEED_SAMPLES=1`; it fails with a message
+  when the app lacks full access, and a second run adds nothing. Access has to come first: on a fresh
+  or erased simulator the order is `simctl addmedia`, grant access, the seed tool, then the tour
+  (README "Running on the simulator").
+
 Views are verified on the simulator with the design system's checklist and the tour's pictures, not
-by unit tests.
+by unit tests. The limited-access interstitial is outside the tour, which runs with full access: its
+look was checked once, in a manual render on 2026-09-28 that nothing in the repository repeats, and
+real limited access has not been exercised.
 
 ## 10. Build and verify
 

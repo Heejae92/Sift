@@ -3,15 +3,20 @@ import XCTest
 /// A screenshot tour of the real app on a simulator: grants photo access through the system dialog
 /// (the only way that works on this runtime — `simctl privacy grant photos` is ignored), then walks
 /// Permission → Review (three swipes and a rewind) → Trash (viewer, purge sheet) → Library (both
-/// segments) → Credits, attaching a screenshot at each stop. Run with the library seeded:
+/// segments) → Credits, attaching a screenshot at each stop. Seed the library in this order:
 ///
 ///     xcrun simctl addmedia booted Sift/Resources/SampleScreenshots/sample-*.png
+///     xcodebuild … -only-testing:SiftUITests test                  # first run: grants access
+///     TEST_RUNNER_SIFT_SEED_SAMPLES=1 xcodebuild … -only-testing:SiftTests/SampleSeedTests test
 ///     xcodebuild … -only-testing:SiftUITests test -resultBundlePath /tmp/sift-tour.xcresult
 ///     xcrun xcresulttool export attachments --path /tmp/sift-tour.xcresult --output-path /tmp/sift-tour
 ///
-/// The app is launched with `-SiftAllImages` (ADR-027) so the simulator's stock photos, which are
-/// years old, come up as cards. The seeded samples are under 30 days old and wait (ADR-032): while
-/// one of them is unreviewed, the all-done frame names the day it comes due.
+/// The seed tool writes with the app's Photos access, so access comes first: the tour's first run
+/// grants it, or Get started → Allow Full Access in the app does. After an erase, seed both again.
+/// The seed tool adds backdated copies of the samples (ADR-033), which are due and come up as cards.
+/// The app is launched with `-SiftAllImages` (ADR-027) so the simulator's stock photos, years old,
+/// come up too. The `addmedia` copies are under 30 days old and wait (ADR-032): while one of them is
+/// unreviewed, the all-done frame names the day it comes due.
 /// The tour asserts only that each screen appears; it is a smoke test with pictures, not a spec.
 @MainActor  // XCUIApplication and its queries are main-actor isolated; XCTest runs the case on the main thread
 final class SiftTourTests: XCTestCase {

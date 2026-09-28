@@ -5,17 +5,19 @@ import Testing
 /// The pure functions behind what Review shows (ADR-032): the all-done body and the header counter.
 @MainActor
 struct ReviewPresentationTests {
-    /// Each body line stands on its own, and a block with neither has no body.
+    /// Each body line stands on its own, and a block with neither has no body. The date is pinned to
+    /// `en_US` and one time zone.
     @Test func allDoneBodyPutsEachLineOnItsOwn() throws {
         let day = try Date("2026-10-12T12:00:00Z", strategy: .iso8601)
         let english = Locale(identifier: "en_US")
-        #expect(EmptyState.allDoneBody(trashCount: 0, nextArrival: nil, locale: english) == nil)
-        #expect(EmptyState.allDoneBody(trashCount: 27, nextArrival: nil, locale: english)
-                == "Trash is holding 27 — empty it whenever.")
-        #expect(EmptyState.allDoneBody(trashCount: 0, nextArrival: day, locale: english)
-                == "Next screenshot: Oct 12.")
-        #expect(EmptyState.allDoneBody(trashCount: 27, nextArrival: day, locale: english)
-                == "Trash is holding 27 — empty it whenever.\nNext screenshot: Oct 12.")
+        let zone = TimeZone(identifier: "America/Los_Angeles") ?? .gmt
+        func body(_ trashCount: Int, _ nextArrival: Date?) -> String? {
+            EmptyState.allDoneBody(trashCount: trashCount, nextArrival: nextArrival, locale: english, timeZone: zone)
+        }
+        #expect(body(0, nil) == nil)
+        #expect(body(27, nil) == "Trash is holding 27 — empty it whenever.")
+        #expect(body(0, day) == "Next screenshot: Oct 12.")
+        #expect(body(27, day) == "Trash is holding 27 — empty it whenever.\nNext screenshot: Oct 12.")
     }
 
     /// The header counts only while something is due and a card is up: never "0 / 0".

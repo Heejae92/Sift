@@ -242,6 +242,7 @@ struct CatalogTests {
                               now: { reference }, minimumAge: Fixtures.minimumAge)
         await catalog.load()
         #expect(Fixtures.minimumAge == 30 * 86_400)
+        #expect(catalog.minimumAgeDays == ReviewPolicy.minimumAgeDays)   // what the copy names
         #expect(catalog.referenceDate == reference)
         #expect(catalog.queue.map(\.id) == ["edge"])
         #expect(catalog.waiting.map(\.id) == ["inside"])

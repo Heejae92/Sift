@@ -23,14 +23,14 @@ name lint from it. The app consumes those tokens and nothing else (P-12).
 | `Sift/DesignSystem/*.swift` | The nine token files. The only place a design value is typed; a product rule's constant lives in `Sift/Data/` under the ADR that set it (`ReviewPolicy`, ADR-032) |
 | `Sift/Resources/` | The asset catalog, the four Pretendard cuts, and six sample screenshots (real iOS screens captured with `SiftUITests/SampleCaptureTests`) used by the demo stack and as the simulator seed |
 | `Sift/PrivacyInfo.xcprivacy` | Privacy manifest: no tracking, no collection, no required-reason APIs |
-| `SiftTests/` | Swift Testing suites, with an actor fake for Photos and an in-memory store |
+| `SiftTests/` | Swift Testing suites, with an actor fake for Photos and an in-memory store, plus the opt-in sample seed tool (`SampleSeedTests`) |
 | `SiftUITests/` | XCTest UI tests: the screenshot tour (`SiftTourTests`) and the opt-in sample capture tool (`SampleCaptureTests`) |
 | `docs/knowledge/ARCHITECTURE.md` | Stack, module map, data flow, the deck state machine, concurrency rules, build order |
 | `docs/knowledge/UI_DESIGN.md` | The design system: tokens, components, screens, the generated contrast table |
 | `docs/knowledge/IA.md` | The information architecture: objects, screens, navigation, routing, the queue lifecycle, persistence, external change. ADR-025, confirmed 2026-09-27; the 30-day rule, ADR-032, 2026-09-28 |
 | `docs/knowledge/DESIGN_PRINCIPLES.md` | P-01 to P-23, the rules a review cites |
 | `docs/knowledge/PRINCIPLES_CHECKLIST.md` | 27 lines for the 23 principles (P-19 gets four, P-15 gets two), plus a pre-ship list for a screen |
-| `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-032, plus the superseded decisions S-1 to S-4 |
+| `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-033, plus the superseded decisions S-1 to S-4 |
 | `docs/superpowers/specs/2026-09-23-sift-design-system-design.md` | The design spec behind the design system |
 | `docs/references.md` | Reference boards, the format reference, three Lazyweb permission-screen links |
 | `design-system.html` | Single-file living style guide with a working swipe demo |
@@ -45,9 +45,9 @@ print:
 
 ```
 ls Sift/DesignSystem/*.swift | wc -l                        # token files, 9
-grep -c '^## ADR-' docs/knowledge/DECISIONS.md              # ADRs, 32
+grep -c '^## ADR-' docs/knowledge/DECISIONS.md              # ADRs, 33
 grep -o '^## ADR-[0-9]\{3\}' docs/knowledge/DECISIONS.md \
-  | tail -1                                                # highest ADR, ## ADR-032
+  | tail -1                                                # highest ADR, ## ADR-033
 grep -c '^### S-' docs/knowledge/DECISIONS.md               # superseded entries, 4
 grep -c '^\*\*P-' docs/knowledge/DESIGN_PRINCIPLES.md       # principles, 23
 grep -c '^- \[ \] P-' docs/knowledge/PRINCIPLES_CHECKLIST.md # principle checklist lines, 27
@@ -55,7 +55,7 @@ grep -c '^- \[ \] P-' docs/knowledge/PRINCIPLES_CHECKLIST.md # principle checkli
 
 The figures after each `#` are what those commands printed on 2026-09-28, run from the repository
 root. The ADR range in the table above comes from the second and third of them: the log runs
-ADR-001 to ADR-032 with no gaps, and S-1 to S-4 alongside.
+ADR-001 to ADR-033 with no gaps, and S-1 to S-4 alongside.
 
 ## Building the app
 
@@ -95,9 +95,27 @@ up as cards.
 
 Review asks only about screenshots at least 30 days old (ADR-032), and the seeded images are
 recent: Photos dates each one from its file, 2026-09-27 for the current set. So they wait. The deck
-shows the stock photos, which are years old, and once those are done the all-done block names the
-day the first sample comes due ("Next screenshot: Oct 27."). To review freshly seeded images now,
-add `-SiftMinimumAgeDays 0`, or any whole number of days:
+shows the stock photos, which are years old and not screenshots, and once those are done the
+all-done block names the day the first sample comes due ("Next screenshot: Oct 27.").
+
+To see real screenshots as cards, seed the six samples a second time with old dates (ADR-033). The
+seed tool is a hosted unit test, `SiftTests/SampleSeedTests`, that a normal test run skips. It is
+compiled into simulator builds only, so a test build for a device does not contain it. It writes
+with the app's own Photos access, so the order on a fresh or erased simulator is: `simctl addmedia`
+(above), then grant access (the tour's first run, or Get started → Allow Full Access in the app),
+then the seed tool, then the tour. The seed step is:
+
+```
+TEST_RUNNER_SIFT_SEED_SAMPLES=1 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Sift.xcodeproj -scheme Sift -destination 'platform=iOS Simulator,id=<UDID>' -only-testing:SiftTests/SampleSeedTests test
+```
+
+It adds the six bundled samples to Photos with fixed creation dates between 2026-08-01 and
+2026-08-24, 35 to 58 days before 2026-09-28, so they are due and stay due. The copies from
+`simctl addmedia` stay recent, which keeps the all-done line. A second run finds every date already
+in the library and adds nothing. Without full access the test fails and says how to grant it.
+
+To review freshly seeded images now instead, add `-SiftMinimumAgeDays 0`, or any whole number of
+days:
 
 ```
 xcrun simctl launch booted com.heejaeeo.sift -SiftAllImages -SiftMinimumAgeDays 0
@@ -125,8 +143,9 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Sif
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcrun xcresulttool export attachments --path /tmp/sift-tour.xcresult --output-path /tmp/sift-tour
 ```
 
-Start from an erased device (`xcrun simctl erase <UDID>`, then seed again) when the prompt has
-already been answered once; a denied answer cannot be reset from the command line there.
+Start from an erased device (`xcrun simctl erase <UDID>`) when the prompt has already been answered
+once; a denied answer cannot be reset from the command line there. An erase empties the library, so
+seed both again in the order above: `simctl addmedia`, grant access, the seed tool, then the tour.
 
 ## Viewing the guide
 

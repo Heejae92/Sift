@@ -1,6 +1,6 @@
 # Sift · Information architecture
 
-v1.1 · 2026-09-28 · status: Active (ADR-025, the four assumptions confirmed by the owner on 2026-09-27; the 30-day rule of ADR-032, chosen by the owner on 2026-09-28) · English
+v1.2 · 2026-09-28 · status: Active (ADR-025, the four assumptions confirmed by the owner on 2026-09-27; the 30-day rule of ADR-032 and its follow-ups in ADR-033, chosen by the owner on 2026-09-28) · English
 
 This file is the structure the screens hang on: what the app is made of, how the pieces are
 organised, how the user moves between them, and what the app does when Photos changes underneath
@@ -159,8 +159,14 @@ Review
 └── otherwise                → deck
 ```
 
-The interstitial's "Sift these N" stores `N` as the acknowledged selection; "Pick more" opens the
-picker and re-evaluates when it closes (A2).
+The interstitial's acknowledging action stores the number of screenshots picked as the acknowledged
+selection, whatever its label counts; "Pick more" opens the picker and re-evaluates when it closes
+(A2). When some of the picked screenshots are unreviewed and under 30 days old, the interstitial
+says so in one line and names how many are ready now, and its action counts those ("Sift these 3");
+when none is ready, the line names the day the first one comes due and the action reads "Continue",
+after which Review opens on the all-done block (ADR-033). With nothing waiting it reads "Sift these
+N", N being everything picked. When nothing picked is a screenshot, it says so, "Pick more" becomes
+the filled action and "Continue" the text one, which goes on to the `noScreenshots` block.
 
 ---
 
@@ -229,7 +235,7 @@ Every action the user can take, and what it does to the three memberships.
 | Library › Archive | Move to Favorites | — | remove · remove from album | set true | — | none |
 | Library, Viewer | Trash | add | remove · remove from album | set false | — | none |
 | Permission | Show me the screenshots | — | — | — | — | the iOS photo-library dialog |
-| Permission · limited | Pick more · Sift these N | — | — | — | re-evaluated | the picker; none |
+| Permission · limited | Pick more · Sift these N (the ready ones), or Continue when none are ready | — | — | — | re-evaluated | the picker; none |
 | Permission · denied | Open Settings | — | — | — | — | leaves the app |
 
 A Photos write happens on FAVE (the flag), on ARCHIVE (album membership) and on permanent deletion;

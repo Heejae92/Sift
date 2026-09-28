@@ -73,7 +73,8 @@
 | 029 | The all-done burst is the three verdict glyphs in the block's ink | 2026-09-27 | Active · owner has not seen it |
 | 030 | Viewer tokens: `viewerBackdrop`, a double-tap scale and a pinch ceiling | 2026-09-27 | Active · ceiling is an assumption |
 | 031 | First look at the running app: centred blocks with a half-screen face, short labels, no Credits link on Permission, real sample screenshots | 2026-09-27 | Active |
-| 032 | Review asks only about screenshots at least 30 days old; newer ones wait and join by themselves | 2026-09-28 | Active |
+| 032 | Review asks only about screenshots at least 30 days old; newer ones wait and join by themselves | 2026-09-28 | Active · corrected 2026-09-28 |
+| 033 | Follow-ups to the 30-day rule: backdated samples for the simulator, and the limited-access screen explains the wait | 2026-09-28 | Active |
 | S-1 | Dark-first adaptive tokens | 2026-09-22 | Superseded by 006 |
 | S-2 | SF Pro Rounded system font | 2026-09-22 | Superseded by 003 |
 | S-3 | SF Symbols as the icon set | 2026-09-22 | Superseded by 017 |
@@ -1303,6 +1304,23 @@ old: a simulator seeded within the last 30 days shows its samples only after the
 for the current seed, unless it is launched with `-SiftMinimumAgeDays 0`. Until then its cards are
 the stock photos.
 
+**Correction, 2026-09-28 (the samples are screenshots).** The Context says "images seeded with
+`simctl addmedia` arrive as ordinary photos". That held for the drawn placeholder samples this entry
+was written with. The samples that replaced them under ADR-031 were captured with `XCUIScreen` and
+carry the EXIF "Screenshot" marker, and Photos files them as screenshots: in the simulator's Photos
+database, read on 2026-09-28 from a copy, the six `addmedia` copies (IMG_0007 to IMG_0012) and the
+six backdated copies of ADR-033 (IMG_0013 to IMG_0018) carry the screenshot subtype, and the stock
+photos (IMG_0001 to IMG_0006) do not. So the Consequences' "If a metadata hint later turns out to
+mark imported images as screenshots, the flag can go" is only half borne out: the hint works for
+the samples, but the stock photos are ordinary photos, and `-SiftAllImages` is still what brings
+them into Review.
+
+**Correction, 2026-09-28 (the seed tool).** The correction before the last one ends "Until then its
+cards are the stock photos." Since ADR-033 that holds only on a simulator that has not been seeded
+with the backdated copies: `SiftTests/SampleSeedTests` adds the six samples again, dated in August
+2026, so they are due and put real screenshots in Review, while the recent `addmedia` copies keep
+the all-done block's date line.
+
 **Applies to** `Sift/Services/PhotoKitLibrary.swift`, `ARCHITECTURE.md` §10, `README.md`
 "Running on the simulator".
 
@@ -1440,11 +1458,95 @@ check. `-SiftAllImages` moves behind the same simulator-only gate (ADR-027, Corr
 2026-09-28). On the simulator the screenshot tour runs on, Review now shows only the stock photos,
 taken between 2009 and 2018; the six seeded samples, dated 2026-09-27, are not due until Oct 27.
 
+**Correction, 2026-09-28 (the seed tool).** The Consequences say that on the simulator the tour runs
+on, "Review now shows only the stock photos". Since ADR-033 the seed tool, `SiftTests/SampleSeedTests`,
+adds the six samples again with August 2026 dates, which are due, so Review there shows real
+screenshots as well; the recent `addmedia` copies still wait until Oct 27 and keep the all-done
+block's date line.
+
 **Applies to** `Sift/Data/ReviewPolicy.swift`, `Sift/Data/Catalog.swift`,
 `Sift/Features/Review/ReviewModel.swift`, `ReviewScreen`, `EmptyState`,
 `Sift/Services/PhotoKitLibrary.swift`, `project.yml`, `SiftTests/`, `IA.md` §1, §4, §5, §7, §8,
 `ia.html`, `UI_DESIGN.md` §11.2, §12, `ARCHITECTURE.md` §1, §3, §5, §9, §10, `README.md` "Running on
 the simulator", ADR-025, ADR-027; P-03.
+
+---
+
+## ADR-033 · Follow-ups to the 30-day rule: backdated samples for the simulator, and the limited-access screen explains the wait
+
+**Context.** ADR-032 left two gaps, and the owner was asked about both on 2026-09-28. On a simulator
+the six seeded samples carry the day they were captured, so they wait until Oct 27 and Review shows
+only the stock photos, which are not screenshots: the app could not be judged on real screenshots
+there. And the limited-access interstitial said "You picked N screenshots" and nothing more, so a
+user who picked recent screenshots went on to an empty queue with no word about why.
+
+For the samples the owner was offered three options. Chosen: "샘플을 30일 전 날짜로 추가 — 개발용 도구로 실제 스크린샷 6장을
+35~60일 전 날짜로 시뮬레이터에 넣습니다. 리뷰에는 실제 스크린샷이 나오고, 오늘 넣은 샘플 덕분에 완료 화면의 날짜 안내도 그대로 보입니다." (add the samples
+with old dates: a development tool puts the six real screenshots into the simulator dated 35 to 60
+days ago, so Review shows real screenshots, and the samples added today keep the all-done screen's
+date line). Not chosen: "지금처럼 두기" (leave it as it is: the stock photos in Review until Oct 27, when
+the real samples join by themselves), and "시뮬레이터에서 30일 규칙 끄기" (a scheme option that turns the rule
+off on the simulator: the samples visible at once, but the waiting behaviour and the date line could
+not be shown there).
+
+For the limited-access screen the owner was offered two. Chosen: "선택 화면에 30일 안내 추가 — 사진을 고른 직후 화면에
+'30일 지난 것만 리뷰해요. 이 중 3장이 지금 대상이에요.'처럼 한 줄 안내를 붙입니다." (add a 30-day note to the selection screen:
+right after the user picks photos, one line such as "Only screenshots older than 30 days are
+reviewed. 3 of these are ready now."). Not chosen: "지금처럼 두기" (leave it as it is and rely on the
+all-done block's "Next screenshot" line alone).
+
+**Decision.** Both chosen options.
+
+Seeding. `SiftTests/SampleSeedTests` is a development tool shaped as a hosted unit test, the
+companion of `SampleCaptureTests`. It compiles into simulator builds only (`#if
+targetEnvironment(simulator)`, the compile-time gate of ADR-027 and ADR-032), so a test build for a
+device does not contain it and cannot write into a real library. It is disabled unless
+`SIFT_SEED_SAMPLES=1` is in the test process's environment (`TEST_RUNNER_SIFT_SEED_SAMPLES=1` on the
+`xcodebuild` process), so a normal run reports it as skipped. It checks that the app has full Photos
+access and fails with a message if not, then adds the six bundled samples through
+`PHAssetCreationRequest` with fixed creation dates, 2026-08-24, 08-20, 08-15, 08-11, 08-06 and
+08-01, which are 35 to 58 days before 2026-09-28. Fixed dates keep the run deterministic and the
+samples due for good; a sample whose date is already in the library is skipped, so a rerun adds
+nothing. It lives in `SiftTests` rather than `SiftUITests` because it needs the app's own Photos
+access, not a UI, and that is also why order matters: on a fresh or erased simulator the steps are
+`simctl addmedia`, then granting access (the tour's first run, or Get started → Allow Full Access),
+then the seed tool, then the tour. After an erase, both seeds are run again.
+
+Interstitial. Let `ready` be the picked screenshots that are due and unreviewed, and `waiting` those
+unreviewed and under 30 days old. With nothing waiting the block is unchanged. With some waiting and
+some ready it gains one body line, "Screenshots wait 30 days before \(Brand.name) asks. 3 are ready
+now." ("1 is ready now."), and the CTA counts the ready ones, "\(Brand.name) these 3" or
+"\(Brand.name) this one". With none ready the line ends on the day the first one comes due, "The
+first is ready Oct 27.", or "It's ready Oct 27." when only one waits, in the all-done line's format
+(`EmptyState.arrivalDay`), and the CTA reads "Continue". The headline still counts everything
+picked, and acknowledging still stores everything picked (A2). The number of days is the catalog's
+own rule, `Catalog.minimumAgeDays`, never a literal (P-12), so the words and the counts cannot
+disagree. The change also fixes an older copy bug on this screen: when nothing picked was a
+screenshot, the block read "You picked 0 screenshots" over a "\(Brand.name) these 0" button. It now
+says "None of these are screenshots.", "Pick more" takes the one filled action, and "Continue",
+which acknowledges, is the bare-text one (P-19). The copy is one pure function,
+`LimitedInterstitial.copy`, tested with a pinned `en_US` locale and time zone.
+
+**Consequences.** The simulator's library holds the six samples twice: the `addmedia` copies, which
+are recent and keep the all-done line naming Oct 27, and the backdated copies, which are due and
+reach Review as cards. The simulator's Photos database gives both the screenshot subtype (ADR-027,
+Correction of 2026-09-28, the samples are screenshots), so the backdated ones should show without
+`-SiftAllImages` too; that was not tried here. The tour now opens on a real screenshot. The
+backdated copies are ordinary assets: a tour or a user can trash or purge them, and a rerun adds
+back only the ones whose dates are gone. On the interstitial, "Continue" breaks §12's "Verbs first"
+on purpose, in the two places above, and §12 records both: with nothing ready, or nothing that is a
+screenshot, there is nothing to act on. The CTA's count and the acknowledged count can now differ, 3
+against 14; the acknowledgement stays the whole selection because A2 compares selections, not what
+is due. The interstitial's look was checked once, in a manual render of the view in the test host on
+2026-09-28, which nothing in the repository repeats; real limited access has not been exercised,
+because this machine's simulator has full access and was left that way.
+
+**Applies to** `SiftTests/SampleSeedTests.swift`, `SiftUITests/SiftTourTests.swift` (the order),
+`Sift/Features/Permission/LimitedInterstitial.swift`, `Sift/Components/EmptyState.swift`
+(`arrivalDay`), `Sift/Data/Catalog.swift` (`minimumAgeDays`),
+`SiftTests/LimitedInterstitialTests.swift`, `README.md` "Running on the simulator",
+`ARCHITECTURE.md` §9, `UI_DESIGN.md` §11.1, §12, `IA.md` §4, §6, ADR-010, ADR-025 (A2), ADR-027,
+ADR-032; P-12, P-19.
 
 ---
 

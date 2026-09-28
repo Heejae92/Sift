@@ -30,6 +30,10 @@ final class Catalog {
     private let minimumAge: TimeInterval
     private var changeTask: Task<Void, Never>?
 
+    /// The rule this catalog applies, in whole days: what copy that names the wait says (ADR-033), so
+    /// the words and the counts come from the same number.
+    var minimumAgeDays: Int { Int((minimumAge / ReviewPolicy.secondsPerDay).rounded()) }
+
     init(library: any PhotoLibrary, persistence: any StorePersistence,
          now: @escaping @Sendable () -> Date = { Date() },
          minimumAge: TimeInterval = ReviewPolicy.minimumAge) {

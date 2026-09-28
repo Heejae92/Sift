@@ -7,14 +7,15 @@ import SwiftUI
 /// `catalog.authorization`.
 ///
 /// - Onboarding, on `DSBlock.onboarding`: `DemoStack` fills the space the copy leaves (the spec's top
-///   55 %), then the headline, `SwipeLegend`, the block CTA and the footer link to Credits. The demo
-///   takes the block's figure slot, so no face is set here. When the copy alone no longer fits
-///   (accessibility text sizes) the demo steps aside and the copy scrolls (P-20).
+///   55 %), then the headline, `SwipeLegend` and the block CTA. There is no link to Credits here: the
+///   owner removed it on 2026-09-27, and Credits is reached from the Library footer (ADR-031, A3).
+///   The demo takes the block's figure slot, so no face is set here. When the copy alone no longer
+///   fits (accessibility text sizes) the demo steps aside and the copy scrolls (P-20).
 /// - Denied (`.denied`, `.restricted`), on `DSBlock.denied`: "Open Settings" and "Not now". There
 ///   is nowhere else to go, so "Not now" only stops asking: the actions give way to a one-line hint
 ///   saying where the setting lives, and the next return to the foreground brings them back.
 /// - VoiceOver: the demo is hidden; the CTA is the first element after the headline, then the
-///   legend, then the footer (§10).
+///   legend (§10).
 struct PermissionScreen: View {
     @Environment(Catalog.self) private var catalog
     @Environment(\.scenePhase) private var scenePhase
