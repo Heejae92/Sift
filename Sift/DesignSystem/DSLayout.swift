@@ -65,6 +65,8 @@ enum DSSize {
     static let iconChrome: CGFloat = 24
     static let iconInline: CGFloat = 20
     static let stampIcon: CGFloat = 24
+    /// How far above the card's centre the FAVE stamp's centre sits, as a fraction of the card height.
+    static let stampFaveRaise: CGFloat = 0.12
     static let focusRing: CGFloat = 3
     static let gridColumns: Int = 3
     static let stackDepth: Int = 3
@@ -82,6 +84,9 @@ enum DSSwipe {
     /// Rotation = dx / rotationDivisor, clamped to ±maxRotationDegrees.
     static let rotationDivisor: CGFloat = 20
     static let maxRotationDegrees: CGFloat = 12
+    /// Resting tilt of the TRASH (+) and ARCHIVE (−) stamps; FAVE sits at 0°. Equal to
+    /// `maxRotationDegrees`, so a stamp on a fully tilted card reads as printed on it.
+    static let stampTiltDegrees: CGFloat = 12
     /// Stamp opacity ramps 0→1 between these distances; the end equals `commitDistance`,
     /// so a fully opaque stamp IS the "release will commit" signal.
     static let stampRevealStart: CGFloat = 20
@@ -98,4 +103,11 @@ enum DSSwipe {
     static let upScale: CGFloat = 1.03
     /// Fraction of the exit animation at which the side effect fires and the next card is promoted.
     static let promoteAt: CGFloat = 0.6
+}
+
+/// Opacity applied to a whole control, as opposed to a color's own alpha (those live in `DSColor`).
+enum DSOpacity {
+    /// Disabled buttons, and Rewind with nothing to rewind. Never the only signal: the control also
+    /// carries the disabled trait (P-19).
+    static let disabled: CGFloat = 0.45
 }

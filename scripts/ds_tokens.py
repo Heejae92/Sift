@@ -314,12 +314,14 @@ DECLARATION_ONLY = {
     "--grid-breakpoint": "CSS media queries cannot take var(); the guide's twelve max-width queries spell 1199.98px literally",
     "--motion-dur3": "surface transitions (sheet, card expand) — the guide has no animated sheet",
     "--motion-toast-visible": "the toast demo is a static swatch, so nothing counts down 2.5 s",
+    "--motion-confetti": "the all-done celebration is not drawn in the guide; the deck demo shows the copy, not the burst",
+    "--motion-stagger": "the guide has no emptying grid; the thumbnail swatches are static",
 }
 
-UNITLESS = {"stackScaleStep", "downFollow", "upScale", "promoteAt",
+UNITLESS = {"stackScaleStep", "downFollow", "upScale", "promoteAt", "stampFaveRaise", "stampPopScale", "disabled",
             "gridColumns", "stackDepth", "desktopColumns", "mobileColumns"}
 ENUM_PREFIX = {"DSSpace": "space", "DSRadius": "radius", "DSSize": "size", "DSSwipe": "swipe",
-               "DSGrid": "grid"}
+               "DSGrid": "grid", "DSOpacity": "opacity"}
 
 
 def kebab(name: str) -> str:
@@ -346,7 +348,8 @@ def number_vars() -> list[str]:
         for enum, values in parse_numbers(path).items():
             for name, v in values.items():
                 if path == MOTION_FILE:
-                    lines.append(f"  {number_var(enum, name, path)}: {v:g}s;")
+                    unit = "" if name in UNITLESS else "s"  # a scale factor in the motion file carries no unit
+                    lines.append(f"  {number_var(enum, name, path)}: {v:g}{unit};")
                 else:
                     unitless = name in UNITLESS or name.endswith("Degrees") or name in ("commitVelocity", "rotationDivisor")
                     unit = "" if unitless else "px"

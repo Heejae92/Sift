@@ -67,6 +67,9 @@
 | 023 | The CTA pill and the focus ring on a color block are the block's own ink | 2026-09-24 | Active · corrected 2026-09-24 |
 | 024 | The guide's reduce-motion cut excludes the deck, so the substitutions run | 2026-09-24 | Active |
 | 025 | Information architecture: a derived queue, four screens, four assumptions | 2026-09-27 | Active |
+| 026 | App stack: Swift 6 strict concurrency, SwiftUI with Observation, XcodeGen, a JSON store, no dependencies | 2026-09-27 | Active |
+| 027 | A DEBUG launch argument reviews every image, because a simulator cannot make screenshots | 2026-09-27 | Active |
+| 028 | Six documented values become tokens; `DSOpacity` joins the layout file | 2026-09-27 | Active |
 | S-1 | Dark-first adaptive tokens | 2026-09-22 | Superseded by 006 |
 | S-2 | SF Pro Rounded system font | 2026-09-22 | Superseded by 003 |
 | S-3 | SF Symbols as the icon set | 2026-09-22 | Superseded by 017 |
@@ -1206,6 +1209,98 @@ the normal path. The pinch-to-zoom question stays open.
 
 **Applies to** `docs/knowledge/IA.md`, `ia.html`, ADR-008, ADR-010, ADR-011, ADR-014, ADR-015,
 `UI_DESIGN.md` §11.
+
+---
+
+## ADR-026 · App stack: Swift 6 strict concurrency, SwiftUI with Observation, XcodeGen, a JSON store, no dependencies
+
+**Context.** ADR-025 fixed what the app is made of; the app phase had to choose what it is built
+with. `docs/knowledge/ARCHITECTURE.md` describes the result. Five of its choices are ones a later
+reader could reasonably question: the Swift language mode, the observation mechanism, how the
+project file is produced, where the two persisted lists live, and whether anything is imported.
+
+**Options.** Language mode: Swift 5 mode with `minimal` concurrency checking, or Swift 6 with
+`complete`. Observation: `ObservableObject` with `@Published`, or the Observation framework's
+`@Observable`. Project file: a committed `Sift.xcodeproj`, or `project.yml` and XcodeGen. Store:
+SwiftData, Core Data, `UserDefaults`, or one JSON file. Dependencies: a PhotoKit wrapper or an
+image-caching package, or none.
+
+**Decision.** Swift 6 with `SWIFT_STRICT_CONCURRENCY = complete`. PhotoKit is the one boundary the
+compiler cannot see across: `PHAsset` is not `Sendable`, `performChanges` blocks are `@Sendable`,
+and change notifications arrive on an arbitrary queue. Strict checking turns that boundary into a
+compile error everywhere except the one file that owns it, so `PhotoKitLibrary` fetches in detached
+tasks and hands back plain `Sendable` values, and nothing outside `Sift/Services/` ever holds a
+PhotoKit type. Observation, because iOS 17 is the floor and per-property invalidation is what a
+deck of three cards wants: a stamp's opacity changing must not redraw the counter. XcodeGen,
+because the project file is derivable from the tree and a derived file is never merged by hand;
+`Sift.xcodeproj` is git-ignored and `xcodegen generate` is step zero of every build. One JSON file
+in Application Support, written atomically with ISO 8601 dates and a `version` field, because
+ADR-025 left two lists and two scalars to persist and a migrating object store is more machinery
+than that data; `UserDefaults` was rejected because a list of thousands of identifiers is not a
+preference. No dependencies: nothing needed one, and every package would owe the same license
+review the fonts and the icons do (ADR-003, ADR-017).
+
+**Consequences.** Every value that crosses an actor boundary is `Sendable`; the test double for
+Photos is an `actor`, and the persistence double is a lock-guarded class. The store can be read with
+any text editor and exercised in a test without a container. A Swift 6 diagnostic in a feature file
+is a design error in that file, not something to silence: `@unchecked Sendable` appears only where a
+lock or a write-once contract stands in for the compiler — the placeholder box at the PhotoKit
+boundary, the in-memory persistence double, and the test clock. Anyone opening the repository for
+the first time needs XcodeGen installed.
+
+**Applies to** `project.yml`, `Sift/Data/LocalStore.swift`, `Sift/Services/PhotoLibrary.swift`,
+`Sift/Services/PhotoKitLibrary.swift`, `SiftTests/FakePhotoLibrary.swift`, `ARCHITECTURE.md` §0,
+§6, §7, §10.
+
+---
+
+## ADR-027 · A DEBUG launch argument reviews every image, because a simulator cannot make screenshots
+
+**Context.** The queue is the screenshots in the library: the fetch predicate is
+`PHAssetMediaSubtype.photoScreenshot` (`IA.md` §5). The iOS Simulator has no screenshot capture
+that lands in its Photos library, and images seeded with `simctl addmedia` arrive as ordinary
+photos. Whether a metadata hint written into the file would change that could not be tested here:
+the machine has no `exiftool`. With a faithful predicate, the app on a simulator is always at
+"No screenshots."
+
+**Options.** (a) Test only on a device. (b) A hidden in-app setting that reviews all images. (c) A
+DEBUG-only launch argument. (d) A second target with a different predicate.
+
+**Decision.** (c). `-SiftAllImages` on the launch arguments drops the subtype predicate. It is read
+under `#if DEBUG` only, so a release build ignores it and there is nothing in the UI to find. The
+six bundled sample images are the simulator's seed set as well as the demo stack's assets; they
+were made for both. Device testing stays the acceptance path; the simulator run is for layout,
+motion and VoiceOver.
+
+**Consequences.** Simulator screenshots of the app show the sample images as cards, so what they
+show is what a real screenshot would show. The fake library in tests never filters and is
+unaffected. Nothing in `Catalog`, the models or the views knows about the flag; it lives in one
+static in `PhotoKitLibrary`. If a metadata hint later turns out to mark imported images as
+screenshots, the flag can go.
+
+**Applies to** `Sift/Services/PhotoKitLibrary.swift`, `ARCHITECTURE.md` §10, `README.md`
+"Running on the simulator".
+
+---
+
+## ADR-028 · Six documented values become tokens; `DSOpacity` joins the layout file
+
+**Decision.** The first feature build found five values that `UI_DESIGN.md` states but no token
+carried: the disabled opacity 0.45, the stamp tilt ±12°, the stamp pop scale 1.15, the confetti
+duration 0.6 s, and the FAVE stamp's raise above the card's centre. P-12 forbids typing them in a
+view, so they became `DSOpacity.disabled`, `DSSwipe.stampTiltDegrees`, `DSMotion.stampPopScale`,
+`DSMotion.confetti` and `DSSize.stampFaveRaise`. A sixth, the per-cell stagger when Trash empties, was
+named in §10 and §11.3 but never valued; it is `DSMotion.stagger` at 0.02 s, a value the owner has not
+seen and may change. `DSOpacity` is a new enum in `DSLayout.swift`
+rather than in `DSColor.swift`, because an opacity applied to a whole control is not a color and the
+color parser treats every `static let` in its file as one; `scripts/ds_tokens.py` maps the enum to
+`--opacity-*`, and its motion emitter now leaves a `UNITLESS` name without the `s`. `--motion-confetti`
+joins `DECLARATION_ONLY` because the guide does not draw the burst, and `--motion-stagger` because it
+has no emptying grid. The rule this sets: a documented
+value without a token is a design-system defect, fixed at the source and never typed in a view.
+
+**Applies to** `DSLayout.swift`, `DSMotion.swift`, `scripts/ds_tokens.py`, `design-system.html`,
+`UI_DESIGN.md` §4, §6, §10; P-12.
 
 ---
 

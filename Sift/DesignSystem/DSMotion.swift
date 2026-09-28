@@ -21,6 +21,13 @@ enum DSMotion {
     static let stampHoldReduced: Double = 0.25
     /// Toast auto-dismiss.
     static let toastVisible: Double = 2.5
+    /// All-done confetti burst. Under Reduce Motion there is no confetti (P-15).
+    static let confetti: Double = 0.6
+    /// Per-cell delay when a grid empties (Trash purge-all): cells fade over `fade`, each starting
+    /// this much after the previous one, so a full screen of cells clears in about half a second.
+    static let stagger: Double = 0.02
+    /// Scale a stamp pops in from on a button-triggered verdict (1.15 → 1), driven by `stampPop`.
+    static let stampPopScale: CGFloat = 1.15
 
     // MARK: Curves
     /// Ease-out entry.
@@ -57,7 +64,8 @@ enum DSMotion {
     /// A linear snap-back and a cross-fade are *replacements*, not removals: the card still has to
     /// return, and the verdict still has to leave.
     static var snapBackReduced: Animation { .linear(duration: dur1) }
-    /// The Reduce Motion replacement for the throw: a linear cross-fade over `fade`.
+    /// Linear over `fade`: the next card's fade-in, thumbnail-cell removal (each cell offset by
+    /// `stagger`), and the Reduce Motion substitute for the throw.
     static var crossFade: Animation { .linear(duration: fade) }
 
     /// Reduce Motion helper: nil removes the transition, state changes still apply.

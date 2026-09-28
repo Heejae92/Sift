@@ -1,23 +1,36 @@
-# Design system
+# Sift
 
-The design system for an iOS 17 SwiftUI screenshot triage app: one screenshot at a time as a card,
-swipe left to trash, right to archive, up to favorite. This folder holds the tokens, the
-documentation and a living style guide. The app itself is the next phase and is not here.
+Sift (provisional name) is an iOS 17 app that shows the screenshots in your Photos library one at
+a time as a card stack: swipe left to trash, right to archive, up to favorite, with a single-step
+rewind. Trash is the app's own holding pen; nothing leaves Photos until you empty it. This
+repository holds the design system, the information architecture, the architecture document and
+the app itself. SwiftUI, Swift 6, no third-party code.
 
-Swift is canonical (ADR-001): every value is typed once under `Sift/DesignSystem/`, and one script
-derives the CSS variables, the WCAG contrast table and the name lint from it.
+Swift is canonical for the design system (ADR-001): every token value is typed once under
+`Sift/DesignSystem/`, and one script derives the CSS variables, the WCAG contrast table and the
+name lint from it. The app consumes those tokens and nothing else (P-12).
 
 ## File map
 
 | Path | What it is |
 |---|---|
+| `project.yml` | The XcodeGen spec. `Sift.xcodeproj` is generated from it and git-ignored (ADR-026) |
+| `Sift/SiftApp.swift`, `Sift/Navigation/` | Entry point, the route enum, and the root gate that shows Permission, the limited interstitial, or the app's navigation stack |
+| `Sift/Data/` | `Screenshot`, `Verdict`, the JSON store, and `Catalog`: the one source of truth, which derives the queue instead of storing it (ADR-025) |
+| `Sift/Services/` | The `PhotoLibrary` protocol, its PhotoKit implementation, the image loader, and the system UI hooks |
+| `Sift/Components/` | Shared views: buttons, color blocks, empty states, the thumbnail cell, the toast |
+| `Sift/Features/` | One folder per screen: Review, Permission, Trash, Library, Viewer, Credits |
 | `Sift/DesignSystem/*.swift` | The nine token files. The only place a value is typed |
+| `Sift/Resources/` | The asset catalog, the four Pretendard cuts, and six sample screenshots used by the demo stack and as the simulator seed |
+| `Sift/PrivacyInfo.xcprivacy` | Privacy manifest: no tracking, no collection, no required-reason APIs |
+| `SiftTests/` | Swift Testing suites, with an actor fake for Photos and an in-memory store |
+| `docs/knowledge/ARCHITECTURE.md` | Stack, module map, data flow, the deck state machine, concurrency rules, build order |
 | `docs/knowledge/UI_DESIGN.md` | The design system: tokens, components, screens, the generated contrast table |
 | `docs/knowledge/IA.md` | The information architecture: objects, screens, navigation, routing, the queue lifecycle, persistence, external change. ADR-025, confirmed 2026-09-27 |
 | `docs/knowledge/DESIGN_PRINCIPLES.md` | P-01 to P-23, the rules a review cites |
 | `docs/knowledge/PRINCIPLES_CHECKLIST.md` | 27 lines for the 23 principles (P-19 gets four, P-15 gets two), plus a pre-ship list for a screen |
-| `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-025, plus the superseded decisions S-1 to S-4 |
-| `docs/superpowers/specs/2026-09-23-sift-design-system-design.md` | The design spec behind all of it |
+| `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-028, plus the superseded decisions S-1 to S-4 |
+| `docs/superpowers/specs/2026-09-23-sift-design-system-design.md` | The design spec behind the design system |
 | `docs/references.md` | Reference boards, the format reference, three Lazyweb permission-screen links |
 | `design-system.html` | Single-file living style guide with a working swipe demo |
 | `ia.html` | The information architecture as diagrams: object model, screen map, launch routing, queue state machine |
@@ -31,17 +44,50 @@ print:
 
 ```
 ls Sift/DesignSystem/*.swift | wc -l                        # token files, 9
-grep -c '^## ADR-' docs/knowledge/DECISIONS.md              # ADRs, 24
+grep -c '^## ADR-' docs/knowledge/DECISIONS.md              # ADRs, 28
 grep -o '^## ADR-[0-9]\{3\}' docs/knowledge/DECISIONS.md \
-  | tail -1                                                # highest ADR, ## ADR-024
+  | tail -1                                                # highest ADR, ## ADR-028
 grep -c '^### S-' docs/knowledge/DECISIONS.md               # superseded entries, 4
 grep -c '^\*\*P-' docs/knowledge/DESIGN_PRINCIPLES.md       # principles, 23
 grep -c '^- \[ \] P-' docs/knowledge/PRINCIPLES_CHECKLIST.md # principle checklist lines, 27
 ```
 
-The figures after each `#` are what those commands printed on 2026-09-24, run from the repository
+The figures after each `#` are what those commands printed on 2026-09-27, run from the repository
 root. The ADR range in the table above comes from the second and third of them: the log runs
-ADR-001 to ADR-024 with no gaps, and S-1 to S-4 alongside.
+ADR-001 to ADR-028 with no gaps, and S-1 to S-4 alongside.
+
+## Building the app
+
+XcodeGen produces the project; Xcode builds it. On this machine `xcode-select` points at the
+Command Line Tools, which have no iOS SDK, so every `xcodebuild` call names Xcode through
+`DEVELOPER_DIR`. Run from the repository root:
+
+```
+xcodegen generate
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Sift.xcodeproj -scheme Sift -destination 'platform=iOS Simulator,name=iPhone 17' build
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Sift.xcodeproj -scheme Sift -destination 'platform=iOS Simulator,name=iPhone 17' test
+```
+
+The last line ends with `** TEST SUCCEEDED **` and, a few lines above it, the Swift Testing summary
+with the number of tests that ran. Generate again after adding or removing a source file; the
+project is not committed (ADR-026).
+
+## Running on the simulator
+
+A simulator cannot take screenshots into its Photos library, and images imported with
+`simctl addmedia` are not flagged as screenshots, so a DEBUG build accepts the launch argument
+`-SiftAllImages` and reviews every image instead (ADR-027). The six sample screenshots under
+`Sift/Resources/SampleScreenshots/` are the seed set:
+
+```
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+xcrun simctl boot "iPhone 17"
+xcrun simctl addmedia booted Sift/Resources/SampleScreenshots/sample-*.png
+xcrun simctl install booted <path to Sift.app from the build above>
+xcrun simctl launch booted com.heejaeeo.sift -SiftAllImages
+```
+
+Grant access in the app when it asks. A release build ignores the argument.
 
 ## Viewing the guide
 
@@ -49,16 +95,17 @@ ADR-001 to ADR-024 with no gaps, and S-1 to S-4 alongside.
 `http://localhost:8000/design-system.html`. It is one file with inline CSS and JavaScript and needs
 no build step.
 
-## Commands
+## Design-system commands
 
-Four commands, and they are the whole verification set. Changing a token means running all four,
-because `lint` compares the `:root` block pasted into the guide against fresh `emit-css` output.
+Four commands, and they are the whole verification set for the tokens. Changing a token means
+running all four, because `lint` compares the `:root` block pasted into the guide against fresh
+`emit-css` output.
 
 | # | Command | Expected output |
 |---|---|---|
 | 1 | `python3 scripts/ds_tokens.py contrast` | ends with `43 pairs · 0 failure(s)`, and no `OUT OF sRGB GAMUT` note in the token table |
 | 2 | `python3 scripts/ds_tokens.py emit-css > scripts/out/tokens.css` | writes the `:root` block; paste it into `design-system.html` |
-| 3 | `python3 scripts/ds_tokens.py lint` | three `lint: EXCEPTION` lines, one `lint: WARNING` line, then `lint: OK` |
+| 3 | `python3 scripts/ds_tokens.py lint` | five `lint: EXCEPTION` lines, one `lint: WARNING` line, then `lint: OK` |
 | 4 | `scripts/typecheck-ds.sh` | `typecheck: OK` |
 
 The 43 contrast pairs are 40 enforced plus 3 informational rows: the yellow edge against `canvas`,
@@ -78,9 +125,9 @@ blocks means a row per fill rather than one row. `surfaceRaised` does not have t
 measures 2.16 against `lavender` and clears the bar on `violet` alone. Bare text is not a shape, so only its
 label is measured, and the label is the pair the block's own copy row already clears.
 
-`lint`'s three EXCEPTION lines cover `--grid-breakpoint`, `--motion-dur3` and
-`--motion-toast-visible` — variables the guide declares but has no way to consume, each allowlisted
-with a reason (ADR-022). They are the `DECLARATION_ONLY` entries printing themselves and their
+`lint`'s five EXCEPTION lines cover `--grid-breakpoint`, `--motion-dur3`, `--motion-toast-visible`,
+`--motion-confetti` and `--motion-stagger` — variables the guide declares but has no way to consume, each allowlisted
+with a reason (ADR-022, ADR-028). They are the `DECLARATION_ONLY` entries printing themselves and their
 recorded reason on every run, rather than being tolerated in silence. The WARNING line stands while
 `DSIconCredits.entries` is empty, and it is a warning: it does not change the exit code. Both are
 expected output; the verdict is the last line.
@@ -96,6 +143,13 @@ The module docstring at the top of `scripts/ds_tokens.py` states the same three 
 **The parent folder name begins with a space.** Quote every path in every command and script.
 `ds_tokens.py` resolves its own paths relative to its file, so it is unaffected; a shell command
 that spells the path out is not.
+
+**The remote is `https://github.com/Heejae92/Sift`, private.** The global git configuration on
+the machine that created it rewrites every GitHub push to SSH (`url.git@github.com:.pushInsteadOf`)
+and the machine has no SSH key, so this clone carries a repository-local identity `pushInsteadOf`
+for its own URL, which wins by being the longer match and keeps pushes on HTTPS through the `gh`
+credential helper. It is local configuration, not a file in the repository; a fresh clone on a
+machine with an SSH key needs nothing.
 
 **Forager Bold Overlap is not licensed for the app yet.** The display face is Forager Bold Overlap
 (Mark Simonson Studio), and Adobe Fonts covers web and desktop use, not embedding in a mobile app.

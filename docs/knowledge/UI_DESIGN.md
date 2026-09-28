@@ -70,7 +70,7 @@ Swift by hand; the two drifted. Here the mirror is generated, so it cannot.
 | `Brand.swift` | `Brand.name`, `Brand.archiveAlbumTitle` — the only place the product name is typed |
 | `DSColor.swift` | every color token, `VerdictColorSet`, the OKLCH → sRGB conversion |
 | `DSTypography.swift` | `DSFont` PostScript names, `DSTextRole`, `.dsType(_:)` |
-| `DSLayout.swift` | `DSSpace`, `DSRadius`, `DSGrid`, `DSSize`, `DSSwipe` |
+| `DSLayout.swift` | `DSSpace`, `DSRadius`, `DSGrid`, `DSSize`, `DSSwipe`, `DSOpacity` |
 | `DSElevation.swift` | `DSShadow`, `.dsShadow(_:)`, `.dsFocusRing(_:cornerRadius:color:)`, `DSLayer` |
 | `DSMotion.swift` | `DSMotion` durations, curves and springs, `DSPressStyle` |
 | `DSHaptics.swift` | `DSHaptic`, `.dsHaptic(_:trigger:)` |
@@ -667,6 +667,7 @@ spacing than a content grid.
 | `DSSize.thumbnailGutter` | 4 | Gutter in the Trash and Library grids |
 | `DSSize.stackOffsetY` | 14 | Vertical offset per card behind the front card |
 | `DSSize.stackScaleStep` | 0.06 | Scale reduction per card behind the front card |
+| `DSSize.stampFaveRaise` | 0.12 | The FAVE stamp's centre sits this fraction of the card height above the card's centre |
 | `DSSize.iconVerdict` | 28 | Glyph inside a verdict button |
 | `DSSize.iconChrome` | 24 | Header and toolbar glyphs |
 | `DSSize.iconInline` | 20 | Glyphs set inside a line of text |
@@ -686,6 +687,15 @@ The toast's dwell time is not a size. `DSSize.toastVisibleSeconds` used to resta
 the toast's own layout, never a duration.
 
 ---
+
+### Opacity
+
+One value applies to a whole control rather than to a color; a color's own alpha is a `DSColor`
+token (`focus`, `scrim`).
+
+| Token | Value | Use |
+|---|---|---|
+| `DSOpacity.disabled` | 0.45 | Disabled buttons, and Rewind with nothing to rewind. Never the only signal: the control also carries the disabled trait (P-19) |
 
 ## 5. Elevation and layering
 
@@ -786,6 +796,8 @@ a raw curve to `withAnimation`" holds for replacements exactly as it holds for r
 | `DSMotion.fade` | 0.18 s | Cross-fades: next-card fade-in, cell removal, Reduce-Motion exit |
 | `DSMotion.stampHoldReduced` | 0.25 s | Reduce Motion: how long the stamp holds before the cross-fade |
 | `DSMotion.toastVisible` | 2.5 s | Toast auto-dismiss |
+| `DSMotion.confetti` | 0.6 s | All-done confetti burst; not played under Reduce Motion |
+| `DSMotion.stagger` | 0.02 s | Per-cell delay when a grid empties; each cell fades over `DSMotion.fade` |
 
 ### Curves and springs
 
@@ -797,7 +809,7 @@ a raw curve to `withAnimation`" holds for replacements exactly as it holds for r
 | `DSMotion.throwOut(duration:)` | `timingCurve(0.23, 1, 0.32, 1)` over a computed duration | The card throw |
 | `DSMotion.snapBack` | `spring(response: 0.35, dampingFraction: 0.70)` | Card returns after an uncommitted drag: one small overshoot, settled in about 0.5 s |
 | `DSMotion.land` | `spring(response: 0.45, dampingFraction: 0.78)` | Rewind: the card *lands*, it does not bounce |
-| `DSMotion.stampPop` | `spring(response: 0.28, dampingFraction: 0.50)` | Stamp pop on a button-triggered verdict, 1.15 → 1 |
+| `DSMotion.stampPop` | `spring(response: 0.28, dampingFraction: 0.50)` | Stamp pop on a button-triggered verdict, `DSMotion.stampPopScale` (1.15) → 1 |
 | `DSMotion.press` | `spring(response: 0.25, dampingFraction: 0.55)` | Button press, scale 0.90 → 1, via `DSPressStyle` |
 | `DSMotion.stackSettle` | same as `DSMotion.snapBack` | Stack re-layout after a commit, so the deck breathes as one |
 | `DSMotion.snapBackReduced` | `linear` over `DSMotion.dur1` | Reduce Motion substitute for `DSMotion.snapBack`; the card still has to return |
@@ -839,6 +851,7 @@ ends as FAVE, because the sector at release is the one that counts.
 | `DSSwipe.minTravelForVelocity` | 48 | Velocity alone cannot commit; this floor kills the fast tap that registers as a 4 pt drag |
 | `DSSwipe.rotationDivisor` | 20 | Rotation = dx / 20, anchored at the card's bottom edge, so the card pivots like a paper card on a table |
 | `DSSwipe.maxRotationDegrees` | 12 | Clamp. Past this the screenshot inside becomes hard to read |
+| `DSSwipe.stampTiltDegrees` | 12 | Resting tilt of TRASH (+) and ARCHIVE (−); FAVE sits at 0°. Equal to the clamp, so a stamp on a fully tilted card reads as printed on it |
 | `DSSwipe.stampRevealStart` | 20 | Below this the drag is still "I might" and shows nothing |
 | `DSSwipe.stampRevealEnd` | 120 | Equal to `DSSwipe.commitDistance` on purpose: a fully opaque stamp *is* the "release will commit" signal |
 | `DSSwipe.sectorHysteresisDegrees` | 6 | θ must cross this far into the neighbouring sector to switch, so a drag along a boundary does not flicker between two stamps |
@@ -887,7 +900,7 @@ survives navigating to Trash or Library within a session and is cleared on cold 
 | Stamp opacity ramp | `DSSwipe.stampRevealStart` → `DSSwipe.stampRevealEnd` | unchanged — it is feedback, not motion |
 | Commit | throw over `DSMotion.exitDuration(velocity:)` | substituted: stamp holds for `DSMotion.stampHoldReduced`, then `DSMotion.crossFade` |
 | Snap-back | `DSMotion.snapBack` spring | substituted: `DSMotion.snapBackReduced` |
-| All-done celebration | 0.6 s confetti | not shown |
+| All-done celebration | `DSMotion.confetti` burst | not shown |
 | Press | `DSMotion.press` spring | the pressed scale still applies, the spring does not |
 
 The rule behind the table: Reduce Motion removes *interpretive* movement (rotation, parallax,
@@ -1172,8 +1185,8 @@ Each entry gives anatomy, the tokens it consumes, its states, and its accessibil
 ### VerdictStamp
 
 - **Anatomy.** A pill holding the verdict glyph at `DSSize.stampIcon` and the verdict word in
-  `DSTextRole.stamp`, uppercase. TRASH sits top-right at +12°, ARCHIVE top-left at −12°, FAVE
-  centered slightly above the middle at 0°, each inset from the card edge by `DSSpace.s5`. The fill is
+  `DSTextRole.stamp`, uppercase. TRASH sits top-right at +`DSSwipe.stampTiltDegrees`, ARCHIVE top-left at
+  −`DSSwipe.stampTiltDegrees`, FAVE at 0° with its centre `DSSize.stampFaveRaise` of the card height above the middle, each inset from the card edge by `DSSpace.s5`. The fill is
   solid `main`, not an outline: screenshots are usually white and an outline vanishes on one.
 - **Tokens.** `DSRadius.pill`, a verdict's `main` with its `on`, `DSTextRole.stamp`
   (`DSTextRole.stampBaseSize` 32, capped at `DSTextRole.stampMaxSize` 44), `DSShadow.floating`,
@@ -1196,7 +1209,7 @@ Each entry gives anatomy, the tokens it consumes, its states, and its accessibil
   `DSSize.rewindButton`, `DSSize.iconVerdict`, `DSRadius.pill`, `DSTextRole.buttonCaption`,
   `DSShadow.floating`, `DSPressStyle` with `DSMotion.press`, `DSSpace.s5` between circles,
   `DSGrid.mobileMargin` for the Rewind inset, `DSLayer.sticky`.
-- **States.** `enabled` · `pressed` (scale 0.90) · `disabled` at opacity 0.45 — Rewind with no
+- **States.** `enabled` · `pressed` (scale 0.90) · `disabled` at `DSOpacity.disabled` (0.45) — Rewind with no
   history, or any button while a card is in flight.
 - **Accessibility.** Every button is at least `DSSize.tapMin`. Labels are "Trash", "Archive",
   "Favorite", "Rewind last". A disabled button keeps its label and gains the disabled trait rather
@@ -1217,7 +1230,7 @@ Each entry gives anatomy, the tokens it consumes, its states, and its accessibil
   with a different context menu and a different viewer action set.
 - **Tokens.** `DSRadius.xs`, `DSSize.gridColumns`, `DSSize.thumbnailGutter`, `surfaceRaised` while
   loading, `DSMotion.fade` on removal.
-- **States.** `default` · `pressed` · `removing`, fading over `DSMotion.fade` and staggered across the
+- **States.** `default` · `pressed` · `removing`, fading over `DSMotion.fade` and staggered by `DSMotion.stagger` across the
   grid.
 - **Accessibility.** Labelled with the asset's date and size; context-menu actions are also exposed as
   custom actions, so they are reachable without a long press.
@@ -1337,7 +1350,7 @@ sits them on are `lavender` and `violet`. Those are the `ink` on `lavender` row 
 colour picker reports 6.15, 6.97 and 16.14 for the same three pairs; that gap is rounding in the
 measuring tool, not a different colour, and the generated table is the number to quote.
 
-- **States.** `default` · `pressed` · `disabled` at opacity 0.45 · `loading`, label replaced by a
+- **States.** `default` · `pressed` · `disabled` at `DSOpacity.disabled` (0.45) · `loading`, label replaced by a
   progress view at the same size.
 - **Accessibility.** The destructive kind carries the destructive trait and always includes a count in
   its label.
@@ -1434,7 +1447,7 @@ the total in the counter goes up, nothing is reordered under the user's thumb.
 
 **All done.** `DSBlock.allDone` (lime, `delighted` face): headline
 `"Inbox zero, screenshot edition."`, body `"Trash is holding 27 — empty it whenever."`, CTA
-`"Open Trash (27)"`. A 0.6 s confetti burst plays, gated on Reduce Motion. Rewind stays available.
+`"Open Trash (27)"`. A confetti burst plays for `DSMotion.confetti`, gated on Reduce Motion. Rewind stays available.
 
 **No screenshots.** `"No screenshots. Honestly, impressive."`
 
@@ -1474,7 +1487,7 @@ owes is the count, so that it stays unambiguous out of context
 
 The body pre-announces the second dialog so the double confirmation reads as designed rather than
 as a bug. After the sheet dismisses, `DSHaptic.purgeArmed` fires and `deleteAssets` presents the
-system dialog. Cells fade out with a stagger over `DSMotion.fade`.
+system dialog. Cells fade out over `DSMotion.fade`, each starting `DSMotion.stagger` after the previous one.
 
 **Cancellation and failure.** Cancelling the system dialog leaves Trash untouched and posts the
 toast `"Not deleted"`. A partial failure shows an inline line: `"Couldn't delete 3. Try again."`
@@ -1743,6 +1756,7 @@ dropped `.main`.
 | `DSSize.thumbnailGutter` | `--size-thumbnail-gutter` | `4px` |
 | `DSSize.stackOffsetY` | `--size-stack-offset-y` | `14px` |
 | `DSSize.stackScaleStep` | `--size-stack-scale-step` | `0.06` |
+| `DSSize.stampFaveRaise` | `--size-stamp-fave-raise` | `0.12` |
 | `DSSize.iconVerdict` | `--size-icon-verdict` | `28px` |
 | `DSSize.iconChrome` | `--size-icon-chrome` | `24px` |
 | `DSSize.iconInline` | `--size-icon-inline` | `20px` |
@@ -1760,6 +1774,7 @@ dropped `.main`.
 | `DSSwipe.minTravelForVelocity` | `--swipe-min-travel-for-velocity` | `48px` |
 | `DSSwipe.rotationDivisor` | `--swipe-rotation-divisor` | `20` |
 | `DSSwipe.maxRotationDegrees` | `--swipe-max-rotation-degrees` | `12` |
+| `DSSwipe.stampTiltDegrees` | `--swipe-stamp-tilt-degrees` | `12` |
 | `DSSwipe.stampRevealStart` | `--swipe-stamp-reveal-start` | `20px` |
 | `DSSwipe.stampRevealEnd` | `--swipe-stamp-reveal-end` | `120px` |
 | `DSSwipe.sectorHysteresisDegrees` | `--swipe-sector-hysteresis-degrees` | `6` |
@@ -1769,6 +1784,7 @@ dropped `.main`.
 | `DSSwipe.downFollow` | `--swipe-down-follow` | `0.35` |
 | `DSSwipe.upScale` | `--swipe-up-scale` | `1.03` |
 | `DSSwipe.promoteAt` | `--swipe-promote-at` | `0.6` |
+| `DSOpacity.disabled` | `--opacity-disabled` | `0.45` |
 
 Angles, velocities, the rotation divisor and the three bare ratios (`--swipe-down-follow`,
 `--swipe-up-scale`, `--swipe-promote-at`) are emitted unitless because they are not lengths; the CSS
@@ -1787,7 +1803,10 @@ side applies `deg` or `ms` at the point of use. Everything that *is* a length ca
 | `DSMotion.exitMax` | `--motion-exit-max` | `0.32s` |
 | `DSMotion.fade` | `--motion-fade` | `0.18s` |
 | `DSMotion.stampHoldReduced` | `--motion-stamp-hold-reduced` | `0.25s` |
+| `DSMotion.stampPopScale` | `--motion-stamp-pop-scale` | `1.15` |
 | `DSMotion.toastVisible` | `--motion-toast-visible` | `2.5s` |
+| `DSMotion.confetti` | `--motion-confetti` | `0.6s` |
+| `DSMotion.stagger` | `--motion-stagger` | `0.02s` |
 
 ### Declared but not consumed
 

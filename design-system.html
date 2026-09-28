@@ -78,6 +78,7 @@
   --size-icon-chrome: 24px;
   --size-icon-inline: 20px;
   --size-stamp-icon: 24px;
+  --size-stamp-fave-raise: 0.12;
   --size-focus-ring: 3px;
   --size-grid-columns: 3;
   --size-stack-depth: 3;
@@ -86,6 +87,7 @@
   --swipe-min-travel-for-velocity: 48px;
   --swipe-rotation-divisor: 20;
   --swipe-max-rotation-degrees: 12;
+  --swipe-stamp-tilt-degrees: 12;
   --swipe-stamp-reveal-start: 20px;
   --swipe-stamp-reveal-end: 120px;
   --swipe-sector-hysteresis-degrees: 6;
@@ -95,6 +97,7 @@
   --swipe-down-follow: 0.35;
   --swipe-up-scale: 1.03;
   --swipe-promote-at: 0.6;
+  --opacity-disabled: 0.45;
   --motion-dur1: 0.12s;
   --motion-dur2: 0.18s;
   --motion-dur3: 0.24s;
@@ -104,7 +107,12 @@
   --motion-fade: 0.18s;
   --motion-stamp-hold-reduced: 0.25s;
   --motion-toast-visible: 2.5s;
+  --motion-confetti: 0.6s;
+  --motion-stagger: 0.02s;
+  --motion-stamp-pop-scale: 1.15;
 }
+
+
 
 /* ---- Not generated: fonts, composed shadows, z ladder, curves, type roles ---- */
 :root {
@@ -359,7 +367,7 @@ code.inline { font-family: ui-monospace, Menlo, monospace; font-size: 0.86em; ba
   transition: background-color var(--motion-dur2) var(--ease-std), transform var(--motion-dur1) var(--ease-std), opacity var(--motion-dur1) var(--ease-std);
 }
 .btn:active { transform: scale(0.90); }
-.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn:disabled { opacity: var(--opacity-disabled); cursor: not-allowed; }
 /* loading: the label is replaced by a progress view at the same size, never by the word "Loading".
    The global prefers-reduced-motion block stops the spin; the ring stays, so the state is still read. */
 .btn__spinner { width: 18px; height: 18px; border-radius: var(--radius-pill);
@@ -422,7 +430,7 @@ code.inline { font-family: ui-monospace, Menlo, monospace; font-size: 0.86em; ba
   transition: transform var(--motion-dur1) var(--ease-std), opacity var(--motion-dur1) var(--ease-std);
 }
 .rewind-btn:active { transform: scale(0.90); }
-.rewind-btn[disabled] { opacity: .45; cursor: not-allowed; }
+.rewind-btn[disabled] { opacity: var(--opacity-disabled); cursor: not-allowed; }
 .rewind-btn svg { width: var(--size-icon-inline); height: var(--size-icon-inline); }
 
 .motion-tokens { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-s3); }
@@ -475,7 +483,7 @@ code.inline { font-family: ui-monospace, Menlo, monospace; font-size: 0.86em; ba
 .stamp svg { width: var(--size-stamp-icon); height: var(--size-stamp-icon); }
 .stamp--trash { top: 22px; right: 18px; background: var(--color-trash); color: var(--color-trash-on); }
 .stamp--archive { top: 22px; left: 18px; background: var(--color-archive); color: var(--color-archive-on); }
-.stamp-center { position: absolute; top: 38%; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; }
+.stamp-center { position: absolute; top: calc((0.5 - var(--size-stamp-fave-raise)) * 100%); left: 0; right: 0; transform: translateY(-50%); display: flex; justify-content: center; pointer-events: none; }
 .stamp--fave { position: static; background: var(--color-fave); color: var(--color-fave-on); }
 .deck__footer { padding: var(--space-s4) var(--space-s2) 0; display: flex; align-items: flex-end; gap: var(--space-s4); }
 .deck__footer .verdict-row { flex: 1 1 auto; }
@@ -1149,9 +1157,9 @@ code.inline { font-family: ui-monospace, Menlo, monospace; font-size: 0.86em; ba
       <template id="cardTpl">
         <div class="deck__card">
           <span class="deck__chip"></span>
-          <span class="stamp stamp--archive" data-rot="rotate(-12deg)"><svg aria-hidden="true"><use href="#i-archive"/></svg>ARCHIVE</span>
-          <span class="stamp-center"><span class="stamp stamp--fave" data-rot="rotate(0deg)"><svg aria-hidden="true"><use href="#i-heart"/></svg>FAVE</span></span>
-          <span class="stamp stamp--trash" data-rot="rotate(12deg)"><svg aria-hidden="true"><use href="#i-trash"/></svg>TRASH</span>
+          <span class="stamp stamp--archive" data-tilt="-1"><svg aria-hidden="true"><use href="#i-archive"/></svg>ARCHIVE</span>
+          <span class="stamp-center"><span class="stamp stamp--fave" data-tilt="0"><svg aria-hidden="true"><use href="#i-heart"/></svg>FAVE</span></span>
+          <span class="stamp stamp--trash" data-tilt="1"><svg aria-hidden="true"><use href="#i-trash"/></svg>TRASH</span>
         </div>
       </template>
 
@@ -1357,7 +1365,9 @@ code.inline { font-family: ui-monospace, Menlo, monospace; font-size: 0.86em; ba
     exitMax:    tok('--motion-exit-max'),
     fade:       tok('--motion-fade'),
     flick:      tok('--motion-button-flick'),
-    hold:       tok('--motion-stamp-hold-reduced')
+    hold:       tok('--motion-stamp-hold-reduced'),
+    stampTilt:  tok('--swipe-stamp-tilt-degrees'),
+    popScale:   tok('--motion-stamp-pop-scale')
   };
 
   var SHOTS = Array.prototype.slice.call(shotTpl.content.querySelectorAll('svg.shot'));
@@ -1416,7 +1426,7 @@ code.inline { font-family: ui-monospace, Menlo, monospace; font-size: 0.86em; ba
       var v = (k === sector) ? o : 0;
       s.style.transition = trans || 'none';
       s.style.opacity = String(v);
-      s.style.transform = s.dataset.rot + ' scale(' + (1.15 - 0.15 * v) + ')';
+      s.style.transform = 'rotate(' + (Number(s.dataset.tilt) * T.stampTilt) + 'deg) scale(' + (T.popScale - (T.popScale - 1) * v) + ')';
     });
   }
 
