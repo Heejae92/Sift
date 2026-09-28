@@ -16,8 +16,9 @@ final class PhotoKitLibrary: PhotoLibrary {
     func fetchScreenshots() async -> [Screenshot] {
         await Task.detached(priority: .userInitiated) {
             let options = PHFetchOptions()
-            // DEBUG escape hatch for simulators, whose imported images are never flagged as
-            // screenshots: `-SiftAllImages` on the launch arguments reviews every image instead.
+            // Simulator escape hatch (ADR-027): a simulator cannot take screenshots and its stock
+            // photos are not screenshots, so `-SiftAllImages` on the launch arguments reviews every
+            // image instead. A device build ignores it, even a Debug run the scheme passes it to.
             if !Self.reviewAllImages {
                 options.predicate = NSPredicate(format: "(mediaSubtypes & %d) != 0",
                                                 PHAssetMediaSubtype.photoScreenshot.rawValue)
@@ -136,7 +137,7 @@ final class PhotoKitLibrary: PhotoLibrary {
     // MARK: - Private
 
     private static let reviewAllImages: Bool = {
-        #if DEBUG
+        #if DEBUG && targetEnvironment(simulator)
         return ProcessInfo.processInfo.arguments.contains("-SiftAllImages")
         #else
         return false

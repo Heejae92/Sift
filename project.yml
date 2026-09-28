@@ -26,8 +26,10 @@ schemes:
         SiftUITests: [test]
     run:
       config: Debug
-      # Xcode's Run on a simulator: imported and stock photos are never flagged as screenshots,
-      # so the Debug scheme reviews every image (ADR-027). Release ignores the argument.
+      # Xcode's Run on a simulator: stock photos are not screenshots and a simulator cannot take
+      # any, so the Debug scheme reviews every image (ADR-027). Release builds and any build for
+      # a device ignore the argument. `-SiftMinimumAgeDays` is deliberately not passed: a simulator
+      # shows the real 30-day rule (ADR-032).
       commandLineArguments:
         "-SiftAllImages": true
     test:

@@ -104,9 +104,34 @@ actor FakePhotoLibrary: PhotoLibrary {
     func fileSizeBytes(for id: String) async -> Int64? { nil }
 }
 
+/// The catalog's clock in tests: one second later on every reading, so "most recently trashed
+/// first" is deterministic. It starts at `Fixtures.clockStart`, when every fixture below is already
+/// due (ADR-032). `advance(by:)` moves it on, for a screenshot coming of age, or back when given a
+/// negative interval, for a device clock set back.
+final class TickingClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private var t: TimeInterval
+    init(start: TimeInterval = Fixtures.clockStart) { t = start }
+    func next() -> Date { lock.withLock { t += 1; return Date(timeIntervalSince1970: t) } }
+    func advance(by interval: TimeInterval) { lock.withLock { t += interval } }
+}
+
 enum Fixtures {
     /// A fixed moment in the past (2023-11-14) so fixtures never sort against the wall clock.
     static let base: TimeInterval = 1_700_000_000
+    static let day = ReviewPolicy.secondsPerDay
+    /// The owner's rule, which every test catalog is given explicitly: `ReviewPolicy.minimumAge`
+    /// honours `-SiftMinimumAgeDays` on a simulator, and the Test action inherits the Run action's
+    /// arguments, so a local scheme edit would otherwise change what the tests check.
+    static let minimumAge = TimeInterval(ReviewPolicy.minimumAgeDays) * day
+    /// Where `TickingClock` starts: 90 days after `base`, so every fixture here is due.
+    static let clockStart = base + 90 * day
+
+    /// A screenshot taken at `time` (seconds since 1970), for dates relative to `clockStart`.
+    static func shot(_ id: String, takenAt time: TimeInterval, favorite: Bool = false) -> Screenshot {
+        Screenshot(id: id, creationDate: Date(timeIntervalSince1970: time), pixelWidth: 1179, pixelHeight: 2556, isFavorite: favorite)
+    }
+
     /// A screenshot taken after every fixture: the newest of all.
     static func newer(_ id: String) -> Screenshot {
         Screenshot(id: id, creationDate: Date(timeIntervalSince1970: base + 60), pixelWidth: 1179, pixelHeight: 2556, isFavorite: false)

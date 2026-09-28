@@ -1,6 +1,6 @@
 # Sift · Architecture
 
-v1.0 · 2026-09-27 · English · companion to `IA.md` (what exists) and `UI_DESIGN.md` (what it looks like)
+v1.1 · 2026-09-28 · English · companion to `IA.md` (what exists) and `UI_DESIGN.md` (what it looks like)
 
 This file is the map of the code: which modules exist, what each one owns, how data moves, and
 what a change has to touch. Read it before adding a file; update it when you add one. Decisions
@@ -48,7 +48,8 @@ Sift/                              app target sources (XcodeGen `sources: [Sift]
     Screenshot.swift               Screenshot (id = PHAsset.localIdentifier, creationDate, size, isFavorite)
     Verdict.swift                  Verdict .trash / .archive / .fave · LibrarySegment · RewindEntry
     LocalStore.swift               StoreState (Codable, versioned) · StorePersistence protocol · file + memory impls
-    Catalog.swift                  @MainActor @Observable · memberships → queue/trash/favorites/archived · every write
+    ReviewPolicy.swift             the 30-day rule (ADR-032): minimumAgeDays · minimumAge · the simulator-only override
+    Catalog.swift                  @MainActor @Observable · memberships → queue/waiting/trash/favorites/archived · every write
   Services/                        the world outside the process, behind protocols
     PhotoLibrary.swift             PhotoLibrary protocol · PhotoAuthorization · PhotoLibraryError
     PhotoKitLibrary.swift          the PhotoKit implementation (fetch, observe, favorite, album mirror, delete)
@@ -65,14 +66,16 @@ Sift/                              app target sources (XcodeGen `sources: [Sift]
     Credits/                       CreditsScreen (DSIconCredits.entries)
   Components/                      cross-screen pieces: DSButton · BlockView · EmptyState · ThumbnailCell · Toast
                                    SwipeGeometry (pure gesture maths, shared by Review and the Permission demo)
-  DesignSystem/                    the nine token files. Unchanged by the app phase; the only place a value is typed
+  DesignSystem/                    the nine token files: the only place a design value is typed. A product rule's
+                                   constant lives in Data/ under the ADR that set it (ReviewPolicy, ADR-032)
   Resources/
     Assets.xcassets                LaunchBackground · AccentColor · icon catalog (Noun Project assets, when they land)
     Fonts/                         Pretendard-*.otf
     SampleScreenshots/             six real iOS screens (captured by SiftUITests/SampleCaptureTests) for DemoStack and for seeding a simulator
   PrivacyInfo.xcprivacy            no tracking, no collected data, no required-reason APIs
 SiftTests/                         Swift Testing · runs on the simulator against FakePhotoLibrary
-project.yml                        targets Sift, SiftTests · scheme Sift
+SiftUITests/                       XCTest UI tests: SiftTourTests (the screenshot tour) · SampleCaptureTests (opt-in capture tool)
+project.yml                        targets Sift, SiftTests, SiftUITests · scheme Sift
 ```
 
 Rules of the map:
@@ -96,14 +99,15 @@ One direction for reads, one for writes:
 
 1. **Reads.** The `Catalog` owns the only copy of `screenshots` (everything the app can see, newest
    first) and `state` (the two lists and two scalars). Every screen reads a *derived* list off it:
-   `queue`, `trashed`, `favorites`, `archived`. Nothing else caches those.
+   `queue`, `waiting`, `trashed`, `favorites`, `archived`. Nothing else caches those.
 2. **Writes.** A user action calls one `Catalog` method (`trash`, `archive`, `favorite`, `rewind`,
    `restore`, `move`, `trashFromLibrary`, `purge`). The method updates `state`, persists it, and
    performs the matching Photos write through the `PhotoLibrary` protocol. The derived lists change
    as a consequence; the screens re-render.
 3. **External change.** `PhotoLibrary.changes()` yields whenever Photos changes. The `Catalog`
-   re-fetches and reconciles (IA §8). The `ReviewModel` decides *when* a reconcile reaches the deck:
-   never during `dragging` or `exiting`, always at the next `promoting` (IA §5).
+   re-fetches and reconciles (IA §8). The `ReviewModel` decides *how* a reconcile reaches the deck:
+   during `dragging` and `exiting` the front card stays pinned and only the cards behind it refresh;
+   the front card itself changes only at the next `promoting` (IA §5, §8).
 
 ## 3. The catalog: one source of truth
 
@@ -111,11 +115,21 @@ One direction for reads, one for writes:
 
 | Derived | Definition |
 |---|---|
-| `queue` | screenshots not in `state.trash`, not in `state.archive`, not `isFavorite`; newest first |
+| `queue` | screenshots not in `state.trash`, not in `state.archive`, not `isFavorite` (unreviewed), and due: `creationDate` at least `minimumAge` before `referenceDate`, the boundary included; newest first |
+| `waiting` | unreviewed and not due yet; oldest first |
+| `nextArrival` | the first waiting screenshot's `creationDate + minimumAge`; `nil` when none waits |
 | `trashed` | screenshots in `state.trash`; most recently trashed first |
 | `favorites` | `isFavorite` and not in `state.trash` |
 | `archived` | in `state.archive` and not in `state.trash` |
-| `reviewedCount` | `total - queue.count` |
+| `total` | every screenshot the app can see, due or not; the limited-access interstitial and its selection check count these |
+| `reviewTotal` | the due screenshots, reviewed or not: the counter's denominator |
+| `reviewedCount` | `reviewTotal - queue.count` |
+
+`referenceDate` is stored, not derived: `now()` at init and at the start of every `refresh()`, so
+the queue holds still between refreshes and a screenshot comes due on the next one — a change in
+Photos, a launch, or a return to the foreground (`RootView` → `refreshAuthorization()`). The age
+rule (ADR-032) touches the queue only; `minimumAge` is injected, defaulting to
+`ReviewPolicy.minimumAge`, and nothing about it is persisted.
 
 Membership precedence on display is Trash > everything (IA §1 rule 3). A pre-existing heart is a
 Favorite and never enters the queue (A1). The archive **list** is the truth and the album is its
@@ -153,7 +167,12 @@ Each screen has a thin model that reads the catalog and owns only screen-local s
   `loading`, `reviewing`, `dragging`, `exiting(Verdict)`, `promoting`, `rewinding`, `allDone`,
   `noScreenshots`. The front card is stable (IA §5): `deck` is recomputed from `catalog.queue` on
   every change, but while reviewing the current front stays in front and a newcomer joins behind it;
-  only a verdict, a rewind or the card's own disappearance changes it. `commit(_:exitDuration:)` runs
+  only a verdict, a rewind or the card's own disappearance changes it. A screenshot that comes due
+  is such a newcomer, and the newest due one, so the rule is what keeps it from landing under the
+  thumb; `ReviewScreen` calls `catalogDidChange()` on `catalog.referenceDate` as well, because a
+  refresh of an unchanged library changes nothing else. `noScreenshots` means `catalog.total == 0`;
+  a library whose screenshots are all waiting is `allDone`, and the counter's `total` is
+  `catalog.reviewTotal`. `commit(_:exitDuration:)` runs
   the exit, sleeps `DSSwipe.promoteAt × duration`, then applies the side effect and promotes;
   `rewind()` replays the recorded entry, and `catalogDidChange()` drops that entry when its verdict
   no longer stands (restored in Trash, purged, un-hearted in Photos). The sleep is injected so tests
@@ -206,28 +225,68 @@ revocation discards the path and shows the denied state.
 
 ## 9. Testing
 
-Swift Testing on the simulator, host app `Sift`, no UI tests in v1.
+Two test targets run on the simulator, both hosted by the app `Sift`.
+
+**`SiftTests`**, Swift Testing, covers everything that is not a view:
 
 | Suite | What it proves |
 |---|---|
-| `CatalogTests` | the four derived lists against `FakePhotoLibrary`; A1 (pre-existing heart skips the queue); every write and its rewind; restore returns by date; move clears the source; purge clears the list; album adoption on an empty store |
+| `CatalogTests` | the five derived lists (`queue`, `waiting`, `trashed`, `favorites`, `archived`) against `FakePhotoLibrary`; A1 (pre-existing heart skips the queue); every write and its rewind; restore returns by date; move clears the source; purge clears the list; album adoption on an empty store; the 30-day rule: recent screenshots wait outside the queue and the counter's denominator, one ages in on the next refresh, exactly 30 days is due, and a clock set back keeps a due card due |
 | `LocalStoreTests` | JSON round trip, missing file, version field |
 | `SwipeGeometryTests` | sector boundaries and hysteresis, commit by distance and by velocity with the travel floor, rotation clamp, stamp ramp endpoints |
-| `ReviewModelTests` | loading → reviewing / allDone / noScreenshots; commit → promote → next card; single-step rewind; new screenshot joins behind the front card |
+| `ReviewModelTests` | loading → reviewing / allDone / noScreenshots; commit → promote → next card; single-step rewind; new screenshot joins behind the front card; only waiting screenshots is allDone, not noScreenshots, with no burst; finishing the queue while others wait is a finished queue; a screenshot that comes due joins behind the front card |
+| `ReviewPolicyTests` | `-SiftMinimumAgeDays` counts only as a whole number of days, 0 or more |
+| `ReviewPresentationTests` | the all-done body lines and the header counter's mapping, as pure functions |
 
-Views are verified on the simulator with the design system's checklist, not by unit tests.
+Clocks: every `CatalogTests` catalog is built by `make()` on a `TickingClock`, which starts 90 days
+after the 2023 fixtures, except the boundary test, which pins a fixed reference date.
+`ReviewModelTests` runs on the wall clock (2026) against the same 2023 fixtures, which are therefore
+due, except its four ADR-032 tests, which pass a `TickingClock` so a screenshot can age in. Every
+test catalog is given the 30-day rule explicitly (`Fixtures.minimumAge`) rather than reading
+`ReviewPolicy.minimumAge`: the Test action runs the host app with the Run action's arguments, so a
+local scheme edit adding `-SiftMinimumAgeDays` would otherwise change what the tests check.
+
+**`SiftUITests`**, XCTest, drives the real app and is a smoke test with pictures, not a spec:
+
+- `SiftTourTests` is the screenshot tour. It launches with `-SiftAllImages`, grants photo access
+  through the system dialog on a fresh install, walks Permission, Review, Trash, the viewer, the
+  purge sheet, Library and Credits, and attaches a screenshot at each stop (README "Running on the
+  simulator").
+- `SampleCaptureTests` is a development tool, not a test of the app: it captures the six sample
+  screenshots from the simulator's built-in apps. It is skipped unless `SIFT_CAPTURE_SAMPLES=1` is in
+  the runner's environment, passed on the `xcodebuild` line as `TEST_RUNNER_SIFT_CAPTURE_SAMPLES=1`.
+
+Views are verified on the simulator with the design system's checklist and the tour's pictures, not
+by unit tests.
 
 ## 10. Build and verify
 
 ```
 xcodegen generate                                                   # writes Sift.xcodeproj (ignored)
 xcodebuild -scheme Sift -destination 'platform=iOS Simulator,name=iPhone 17' build
-xcodebuild -scheme Sift -destination 'platform=iOS Simulator,name=iPhone 17' test
+xcodebuild -scheme Sift -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:SiftTests test
+xcodebuild -scheme Sift -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -only-testing:SiftUITests/SiftTourTests -resultBundlePath /tmp/sift-tour.xcresult test   # the tour
 ```
+
+The unit tests are the plain test command. The tour is its own command because it needs a seeded,
+granted simulator and changes the app's data there (README "Running on the simulator").
 
 Run with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` on this machine
 (`xcode-select` points at the command-line tools). The four design-system commands (P-23) are
 unchanged and still gate any token edit.
+
+**Simulator overrides.** Two launch arguments exist for a simulator and are read only under
+`#if DEBUG && targetEnvironment(simulator)`, so a release build and every build for a device ignore
+them:
+
+| Argument | Read in | Effect |
+|---|---|---|
+| `-SiftAllImages` | `PhotoKitLibrary.reviewAllImages` | drops the screenshot predicate and reviews every image (ADR-027); the `Sift` scheme passes it on Run |
+| `-SiftMinimumAgeDays <n>` | `ReviewPolicy.minimumAge` | reviews screenshots at least `n` days old instead of 30 (ADR-032); not in the scheme, so a simulator shows the real rule unless it is added under Edit Scheme → Run → Arguments |
+
+The Test action uses the Run action's arguments, so both reach the unit-test host too; the tests
+are written not to depend on either (§9).
 
 ## 11. Build order
 

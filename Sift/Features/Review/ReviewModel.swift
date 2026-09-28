@@ -37,7 +37,9 @@ final class ReviewModel {
 
     // MARK: - Counter (IA §1 rule 5)
 
-    var total: Int { catalog.total }
+    /// The due screenshots, reviewed or not (ADR-032). One still waiting is counted once it comes
+    /// due; `catalog.total`, which counts every screenshot, decides only `noScreenshots`.
+    var total: Int { catalog.reviewTotal }
     /// "12 / 340" while a card is up; `total / total` when the queue is empty.
     var position: Int {
         let reviewed = catalog.reviewedCount
@@ -61,17 +63,23 @@ final class ReviewModel {
             deck = [front] + Array(rest.prefix(DSSize.stackDepth - 1))
         case .loading, .reviewing, .allDone, .noScreenshots:
             var ordered = queue
-            // IA §5: a newcomer joins by date but behind the front card, never under the thumb. The
-            // front card changes only through a verdict, a rewind or its own disappearance, so while
-            // reviewing the current front stays in front; `pinnedFrontID` carries the same rule
-            // across a drag and a landing.
+            // IA §5: a newcomer joins by date but behind the front card, never under the thumb. That
+            // includes a screenshot that has just come due (ADR-032): it is the newest due one, so it
+            // would otherwise sort to the front. The front card changes only through a verdict, a
+            // rewind or its own disappearance, so while reviewing the current front stays in front;
+            // `pinnedFrontID` carries the same rule across a drag and a landing.
             let stableFront = pinnedFrontID ?? (phase == .reviewing ? deck.first?.id : nil)
             if let pinned = stableFront, let index = ordered.firstIndex(where: { $0.id == pinned }), index != 0 {
                 ordered.insert(ordered.remove(at: index), at: 0)
             }
             deck = Array(ordered.prefix(DSSize.stackDepth))
+            // `noScreenshots` only when the library has none; one whose screenshots are all still
+            // waiting is `allDone` (ADR-032).
             let next: Phase = catalog.total == 0 ? .noScreenshots : (queue.isEmpty ? .allDone : .reviewing)
-            if next == .allDone, phase != .allDone, phase != .loading { queueDoneCount += 1 }
+            // The queue ran out under review. Not a launch that starts out done, and not a first
+            // screenshot that arrives and waits, which takes `noScreenshots` to `allDone` with
+            // nothing reviewed.
+            if next == .allDone, phase == .reviewing { queueDoneCount += 1 }
             phase = next
         }
     }

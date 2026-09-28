@@ -53,6 +53,9 @@ struct ReviewScreen: View {
         }
         .onChange(of: catalog.screenshots) { _, _ in model?.catalogDidChange() }
         .onChange(of: catalog.state) { _, _ in model?.catalogDidChange() }
+        // A refresh of an unchanged library moves neither of the two above, but a waiting screenshot
+        // may have come due against the new reference date (ADR-032).
+        .onChange(of: catalog.referenceDate) { _, _ in model?.catalogDidChange() }
         .onChange(of: model?.lastAnnouncement) { _, text in announce(text) }
     }
 
@@ -90,27 +93,41 @@ struct ReviewScreen: View {
     // MARK: - Phase → what is shown
 
     private var counter: ProgressCounter.Phase {
-        guard let model else { return .loading }
-        switch model.phase {
-        case .loading: return .loading
-        case .allDone, .noScreenshots: return .done
-        default: return .counting(position: model.position, total: model.total)
+        Self.counterPhase(model?.phase, position: model?.position ?? .zero, total: model?.total ?? .zero)
+    }
+
+    /// The header counter for a deck phase: "— / —" while loading, nothing once a block is up, and
+    /// nothing while no screenshot is due yet (ADR-032), so it never reads "0 / 0", even mid-flight.
+    /// Position and total are read only when there is a count to show.
+    static func counterPhase(_ phase: ReviewModel.Phase?, position: @autoclosure () -> Int,
+                             total: @autoclosure () -> Int) -> ProgressCounter.Phase {
+        switch phase {
+        case .none, .some(.loading): return .loading
+        case .some(.allDone), .some(.noScreenshots): return .done
+        default:
+            let total = total()
+            return total == 0 ? .done : .counting(position: position(), total: total)
         }
     }
 
-    /// The block that replaces the deck: `allDone` (the queue is empty, total > 0) or `noScreenshots`.
+    /// The block that replaces the deck: `allDone` (the queue is empty and the library is not: every
+    /// screenshot is reviewed or still waiting) or `noScreenshots`.
     private var emptyState: EmptyState.Kind? {
         switch model?.phase {
-        case .some(.allDone): return .allDone(trashCount: catalog.trashed.count)
+        case .some(.allDone): return .allDone(trashCount: catalog.trashed.count, nextArrival: catalog.nextArrival)
         case .some(.noScreenshots): return .noScreenshots
         default: return nil
         }
     }
 
     /// The block behind the header and the dock, whose ink and focus ring they take (§9 Rules).
-    /// `EmptyState` draws `noScreenshots` on `DSBlock.allDone` as well (§15 item 5).
+    /// `EmptyState` draws `noScreenshots` on `DSBlock.allDone` as well (§15 item 5). Read from the
+    /// phase, so it never builds the block's copy.
     private var block: DSBlock? {
-        emptyState == nil ? nil : .allDone
+        switch model?.phase {
+        case .some(.allDone), .some(.noScreenshots): return .allDone
+        default: return nil
+        }
     }
 
     /// One burst each time the queue runs out (`ReviewModel.queueDoneCount`), none on a launch that

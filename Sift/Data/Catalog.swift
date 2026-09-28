@@ -15,25 +15,49 @@ final class Catalog {
     private(set) var isLoaded = false
     /// Set when the mirror album could not be written (limited access); the list stays the truth.
     private(set) var albumMirrorRefused = false
+    /// The moment due-ness is measured against (ADR-032): `now()` at init and at the start of every
+    /// `refresh()`. The queue therefore holds still between refreshes, and a screenshot that comes of
+    /// age joins it on the next one: a change in Photos, a launch, or a return to the foreground,
+    /// which `RootView` routes through `refreshAuthorization()`. It never moves back, so a device
+    /// clock set back cannot turn a due card into a waiting one.
+    private(set) var referenceDate: Date
 
     private let library: any PhotoLibrary
     private let persistence: any StorePersistence
     private let now: @Sendable () -> Date
+    /// How old a screenshot must be before Review asks about it (ADR-032). Injected, so a test pins
+    /// the owner's rule instead of reading a launch argument.
+    private let minimumAge: TimeInterval
     private var changeTask: Task<Void, Never>?
 
     init(library: any PhotoLibrary, persistence: any StorePersistence,
-         now: @escaping @Sendable () -> Date = { Date() }) {
+         now: @escaping @Sendable () -> Date = { Date() },
+         minimumAge: TimeInterval = ReviewPolicy.minimumAge) {
         self.library = library
         self.persistence = persistence
         self.now = now
+        self.minimumAge = minimumAge
+        self.referenceDate = now()
         self.state = (try? persistence.load()) ?? StoreState()
     }
 
     // MARK: - Derived lists (IA §1)
 
-    /// Not trashed, not archived, not favorited. Newest first.
+    /// Unreviewed and due (IA §1 rule 2). Newest first.
     var queue: [Screenshot] {
-        screenshots.filter { !state.isTrashed($0.id) && !state.isArchived($0.id) && !$0.isFavorite }
+        screenshots.filter { isUnreviewed($0) && isDue($0) }
+    }
+
+    /// Unreviewed but not due yet: on no screen until it comes of age, then in the queue. Oldest
+    /// first, so the first one is the next to arrive (`screenshots` is newest first).
+    var waiting: [Screenshot] {
+        screenshots.filter { isUnreviewed($0) && !isDue($0) }.reversed()
+    }
+
+    /// When the next waiting screenshot comes due; `nil` when none waits. The oldest waiting one
+    /// arrives first, and it is the last in `screenshots`, which is newest first.
+    var nextArrival: Date? {
+        screenshots.last { isUnreviewed($0) && !isDue($0) }.map { $0.creationDate.addingTimeInterval(minimumAge) }
     }
 
     /// Most recently trashed first. Trash wins on display over the other two memberships.
@@ -47,10 +71,23 @@ final class Catalog {
     var favorites: [Screenshot] { screenshots.filter { $0.isFavorite && !state.isTrashed($0.id) } }
     var archived: [Screenshot] { screenshots.filter { state.isArchived($0.id) && !state.isTrashed($0.id) } }
 
+    /// Every screenshot the app can see, due or not. The limited-access interstitial counts these.
     var total: Int { screenshots.count }
-    var reviewedCount: Int { total - queue.count }
+    /// The due screenshots, reviewed or not: the counter's denominator (IA §1 rule 5).
+    var reviewTotal: Int { screenshots.count(where: { isDue($0) }) }
+    var reviewedCount: Int { reviewTotal - queue.count }
 
     func screenshot(_ id: String) -> Screenshot? { screenshots.first { $0.id == id } }
+
+    /// Not trashed, not archived, not favorited (IA §1 rule 1).
+    private func isUnreviewed(_ shot: Screenshot) -> Bool {
+        !state.isTrashed(shot.id) && !state.isArchived(shot.id) && !shot.isFavorite
+    }
+
+    /// At least `minimumAge` old at `referenceDate`; the boundary itself is due (ADR-032).
+    private func isDue(_ shot: Screenshot) -> Bool {
+        shot.creationDate <= referenceDate.addingTimeInterval(-minimumAge)
+    }
 
     /// File size for a card chip or a Trash header; `nil` while unknown. Cached per identifier.
     func fileSizeBytes(for id: String) async -> Int64? {
@@ -107,6 +144,7 @@ final class Catalog {
     }
 
     func refresh() async {
+        referenceDate = max(referenceDate, now())
         let fresh = await library.fetchScreenshots()
         screenshots = fresh.sorted { $0.creationDate > $1.creationDate }
         pruneMissing()

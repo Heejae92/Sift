@@ -1,6 +1,6 @@
 # Sift · Information architecture
 
-v1.0 · 2026-09-27 · status: Active (ADR-025, the four assumptions confirmed by the owner on 2026-09-27) · English
+v1.1 · 2026-09-28 · status: Active (ADR-025, the four assumptions confirmed by the owner on 2026-09-27; the 30-day rule of ADR-032, chosen by the owner on 2026-09-28) · English
 
 This file is the structure the screens hang on: what the app is made of, how the pieces are
 organised, how the user moves between them, and what the app does when Photos changes underneath
@@ -67,22 +67,31 @@ written in the app phase).
 stores "this screenshot was reviewed"; the queue is derived:
 
 1. `unreviewed(s)` = not in the trash list, not in the archive list, not favorited.
-2. **Queue** = every screenshot with `unreviewed(s)`, newest first (`creationDate` descending). The
-   front card is the newest unreviewed screenshot.
+2. **Queue** = every screenshot with `unreviewed(s)` that is also **due**: taken at least 30 days
+   (`ReviewPolicy.minimumAgeDays`) before the reference date, the boundary included, counted as
+   30 × 86 400 s. Newest first (`creationDate` descending); the front card is the newest due
+   unreviewed screenshot. An unreviewed screenshot that is not due yet is **waiting**: it is on no
+   screen, and it joins the queue by itself once it comes of age (ADR-032). The reference date is
+   the moment of the last refresh — launch, return to the foreground, or a change in Photos — so the
+   queue holds still between refreshes.
 3. **Trash wins on display.** A screenshot in the trash list appears only in Trash, even if it is
    also favorited or archived. The app clears the other two when it trashes; the rule covers edits
    made in Photos afterwards.
 4. **Library › Favorites** = favorited and not in the trash list. **Library › Archive** = in the
    archive list and not in the trash list. A screenshot can be in both segments (the user hearted
    an archived one in Photos) and then appears in both.
-5. **Counter.** `total` = number of screenshots the app can see; `reviewed` = `total` minus the
-   queue length. The header shows `reviewed + 1 / total` while a card is up, and `total / total`
-   when the queue is empty.
+5. **Counter.** `total` = number of screenshots the app can see; `reviewTotal` = the due ones
+   among them, reviewed or not; `reviewed` = `reviewTotal` minus the queue length. The header shows
+   `reviewed + 1 / reviewTotal` while a card is up; when the queue is empty the all-done block takes
+   its place, and the last announcement reads `reviewTotal of reviewTotal`. A waiting screenshot
+   counts in `total` only and joins `reviewTotal` when it comes due, so when every screenshot is
+   waiting `reviewTotal` is 0 and there is no count to show (ADR-032).
 
 Consequences worth stating once: a screenshot the user hearted in Photos before ever opening the
 app is already a Favorite and never enters the queue (A1, [§10](#10-assumptions-confirmed));
 un-hearting it in Photos later puts it back in the queue by the same rule. The app owns no
-"reviewed" flag that could drift from what Photos shows.
+"reviewed" flag that could drift from what Photos shows, and no "waiting" flag either: being due is
+`creationDate` against the reference date, so a screenshot ages into the queue without a write.
 
 ---
 
@@ -145,7 +154,8 @@ active
 
 Review
 ├── total == 0               → noScreenshots block
-├── queue empty              → allDone block (Trash count in the copy)
+├── queue empty              → allDone block (Trash count and the next arrival in the copy),
+│                              also when every screenshot is still waiting
 └── otherwise                → deck
 ```
 
@@ -166,8 +176,8 @@ States of the Review screen:
 | `exiting` | the card is flying out; input closed | 60 % of the exit → `promoting` |
 | `promoting` | side effect applied, next card fills in, counter updates | immediately → `reviewing` or `allDone` |
 | `rewinding` | the last card flies back; input closed | landing → `reviewing` |
-| `allDone` | queue empty, total > 0 | rewind, restore, a move out of Library, an external un-heart, a new screenshot |
-| `noScreenshots` | total == 0 | a new screenshot |
+| `allDone` | queue empty, total > 0: every screenshot is reviewed or still waiting | rewind, restore, a move out of Library, an external un-heart, a new screenshot that is already due, a waiting screenshot coming due at a refresh |
+| `noScreenshots` | total == 0 | a new screenshot: to `allDone` while it waits, to `reviewing` if it is already due |
 
 Transitions and their triggers:
 
@@ -182,10 +192,18 @@ Transitions and their triggers:
 | `promoting` | queue empty | `allDone` | `DSHaptic.queueDone` |
 | `reviewing`, `allDone` | rewind, entry present | `rewinding` | side effect reversed exactly |
 | `rewinding` | landing | `reviewing` | — |
-| `allDone` | a screenshot becomes unreviewed again | `reviewing` | it takes its place by date |
+| `allDone` | a due screenshot becomes unreviewed again, or a waiting one comes due at a refresh | `reviewing` | it takes its place by date |
 | any | authorization revoked | Permission · denied | stack discarded |
-| `reviewing`, `allDone` | new screenshot appears | same state, total + 1 | it joins by date, behind the front card, never under the thumb |
+| `reviewing`, `allDone` | a new screenshot under 30 days old appears | same state; `total` + 1, the counter unchanged | it waits ([§1](#1-object-model) rule 2) |
+| `noScreenshots` | a new screenshot under 30 days old appears | `allDone` | it waits, and the block names the day it comes due; no burst and no `DSHaptic.queueDone`, since nothing was finished |
+| `reviewing` | a new screenshot already 30 days old appears | same state; `total` and `reviewTotal` + 1 | it joins by date, behind the front card, never under the thumb |
+| `allDone`, `noScreenshots` | a new screenshot already 30 days old appears | `reviewing` | `total` and `reviewTotal` + 1; it takes its place by date |
+| `reviewing` | a waiting screenshot comes due at a refresh | same state, `reviewTotal` + 1 | it joins behind the front card, never under the thumb: as the newest due screenshot it would otherwise sort to the front |
 | `reviewing` | the front screenshot is deleted in Photos | `promoting` | skipped silently, no verdict recorded |
+
+**The counter counts what is due** (ADR-032). Its denominator is `reviewTotal`, the due screenshots,
+reviewed or not ([§1](#1-object-model) rule 5): a screenshot taken mid-session leaves it alone, and
+one that comes due raises it by one at the refresh that brings it in.
 
 **Rewind holds exactly one entry** (ADR-008). It is replaced on every commit, cleared on cold
 launch, cleared when the queue reaches its cap, and invalidated when its screenshot changes hands
@@ -234,12 +252,14 @@ the archive list still records the verdict and the album catches up when access 
 
 **What is deliberately not stored.** No "onboarding seen" flag: Permission appears whenever the
 authorization status makes it necessary and never otherwise. No per-screenshot "reviewed" flag:
-derived ([§1](#1-object-model)). No copy of the favorite flag. No session log, no statistics.
+derived ([§1](#1-object-model)). No "waiting" flag and no schedule for when a screenshot comes due:
+derived from `creationDate` (ADR-032). No copy of the favorite flag. No session log, no statistics.
 
 **Recovery after reinstall.** The trash list is gone, and because nothing was deleted from Photos
-the trashed screenshots simply return to the queue. The archive list is gone too, but the album is
-not: on first launch with an empty store, if an album titled `Brand.archiveAlbumTitle` exists, the
-app adopts it and seeds the archive list from its members (A4).
+the trashed screenshots simply return to the queue (a recent one waits until it is 30 days old).
+The archive list is gone too, but the album is not: on first launch with an empty store, if an
+album titled `Brand.archiveAlbumTitle` exists, the app adopts it and seeds the archive list from its
+members (A4).
 
 **Mechanism.** Which store (a `Codable` file in Application Support, or SwiftData) is an
 architecture decision for the app phase. The IA only requires that the two lists and two scalars
@@ -256,7 +276,7 @@ need no special case; the table lists the ones that produce a visible effect.
 | Change made in Photos | Effect in the app |
 |---|---|
 | A screenshot is deleted | dropped from the queue and from both lists silently; if it was the front card, the deck promotes without a verdict |
-| A screenshot is taken | joins the queue by date, behind the front card; `total` rises; `noScreenshots` becomes `reviewing` |
+| A screenshot is taken | waits 30 days ([§1](#1-object-model) rule 2): `total` rises at once, the counter does not; `noScreenshots` becomes `allDone`, whose copy names the day it comes due. At the first refresh after it comes due it joins the queue by date, behind the front card |
 | A screenshot is hearted | leaves the queue; appears in Library › Favorites |
 | A heart is removed | returns to the queue unless it is in the trash or archive list |
 | A screenshot is removed from the archive album by hand | treated as un-archiving: the archive entry is dropped and the screenshot returns to the queue |
@@ -265,8 +285,12 @@ need no special case; the table lists the ones that produce a visible effect.
 | Authorization is revoked | Permission · denied; the stack is discarded |
 | Authorization is widened from limited to full | Review; the acknowledged selection count is cleared |
 
-Ordering under the thumb never changes: a screenshot that arrives, leaves or changes membership
-mid-drag is applied at the next `promoting`, not during `dragging` or `exiting`.
+"Returns to the queue" in the rows above means "becomes unreviewed": a screenshot under 30 days old
+waits instead, and joins at the first refresh after it comes of age (ADR-032).
+
+Ordering under the thumb never changes: a screenshot that arrives, leaves, changes membership or
+comes due mid-drag is applied behind the pinned front card; the front card itself changes only at
+the next `promoting`.
 
 ---
 

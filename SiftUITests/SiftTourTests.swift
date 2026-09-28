@@ -9,7 +9,9 @@ import XCTest
 ///     xcodebuild … -only-testing:SiftUITests test -resultBundlePath /tmp/sift-tour.xcresult
 ///     xcrun xcresulttool export attachments --path /tmp/sift-tour.xcresult --output-path /tmp/sift-tour
 ///
-/// The app is launched with `-SiftAllImages` (ADR-027) so the seeded photos count as screenshots.
+/// The app is launched with `-SiftAllImages` (ADR-027) so the simulator's stock photos, which are
+/// years old, come up as cards. The seeded samples are under 30 days old and wait (ADR-032): while
+/// one of them is unreviewed, the all-done frame names the day it comes due.
 /// The tour asserts only that each screen appears; it is a smoke test with pictures, not a spec.
 @MainActor  // XCUIApplication and its queries are main-actor isolated; XCTest runs the case on the main thread
 final class SiftTourTests: XCTestCase {

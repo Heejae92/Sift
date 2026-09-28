@@ -66,13 +66,14 @@
 | 022 | The token script fails loudly; CSS-variable usage is counted exactly | 2026-09-24 | Active · corrected 2026-09-24 |
 | 023 | The CTA pill and the focus ring on a color block are the block's own ink | 2026-09-24 | Active · corrected 2026-09-24 |
 | 024 | The guide's reduce-motion cut excludes the deck, so the substitutions run | 2026-09-24 | Active |
-| 025 | Information architecture: a derived queue, four screens, four assumptions | 2026-09-27 | Active |
+| 025 | Information architecture: a derived queue, four screens, four assumptions | 2026-09-27 | Active · corrected 2026-09-28 |
 | 026 | App stack: Swift 6 strict concurrency, SwiftUI with Observation, XcodeGen, a JSON store, no dependencies | 2026-09-27 | Active |
-| 027 | A DEBUG launch argument reviews every image, because a simulator cannot make screenshots | 2026-09-27 | Active |
+| 027 | A DEBUG launch argument reviews every image, because a simulator cannot make screenshots | 2026-09-27 | Active · corrected 2026-09-28 |
 | 028 | Six documented values become tokens; `DSOpacity` joins the layout file | 2026-09-27 | Active |
 | 029 | The all-done burst is the three verdict glyphs in the block's ink | 2026-09-27 | Active · owner has not seen it |
 | 030 | Viewer tokens: `viewerBackdrop`, a double-tap scale and a pinch ceiling | 2026-09-27 | Active · ceiling is an assumption |
 | 031 | First look at the running app: centred blocks with a half-screen face, short labels, no Credits link on Permission, real sample screenshots | 2026-09-27 | Active |
+| 032 | Review asks only about screenshots at least 30 days old; newer ones wait and join by themselves | 2026-09-28 | Active |
 | S-1 | Dark-first adaptive tokens | 2026-09-22 | Superseded by 006 |
 | S-2 | SF Pro Rounded system font | 2026-09-22 | Superseded by 003 |
 | S-3 | SF Symbols as the icon set | 2026-09-22 | Superseded by 017 |
@@ -1210,6 +1211,14 @@ Status is **Active**. The conditional consequence is now in force: `UI_DESIGN.md
 the decisions rather than propose them, and ADR-010 carries a dated Correction making the list
 the normal path. The pinch-to-zoom question stays open.
 
+**Correction, 2026-09-28.** The Decision above says every screen, route and side effect in `IA.md`
+follows from "that one rule", `unreviewed = not trashed, not archived, not favorited`. Since ADR-032
+the queue follows from two: it is the unreviewed screenshots that are also due, taken at least 30
+days before the catalog's reference date. The first rule is unchanged and still decides every
+membership; the second decides only when an unreviewed screenshot is asked about, and a younger one
+waits outside the queue. Both are derived, so the app still owns no flag that could drift from what
+Photos shows.
+
 **Applies to** `docs/knowledge/IA.md`, `ia.html`, ADR-008, ADR-010, ADR-011, ADR-014, ADR-015,
 `UI_DESIGN.md` §11.
 
@@ -1280,6 +1289,19 @@ show is what a real screenshot would show. The fake library in tests never filte
 unaffected. Nothing in `Catalog`, the models or the views knows about the flag; it lives in one
 static in `PhotoKitLibrary`. If a metadata hint later turns out to mark imported images as
 screenshots, the flag can go.
+
+**Correction, 2026-09-28.** The Decision above says the flag "is read under `#if DEBUG` only, so a
+release build ignores it and there is nothing in the UI to find". A release build does ignore it,
+but DEBUG alone was the wrong gate. Since the `Sift` scheme began passing `-SiftAllImages` on every
+Run (commit `5786c73`, after this entry was written), a Debug run from Xcode on an iPhone would
+review every photo in the library, not only its screenshots, on a device, which this entry names as
+the acceptance path. The flag is now read under `#if DEBUG && targetEnvironment(simulator)`, so a
+release build and every build for a device ignore it. The scheme keeps passing it, and ADR-032's
+`-SiftMinimumAgeDays` sits behind the same gate. The Consequences also say "Simulator screenshots of
+the app show the sample images as cards". Since ADR-032 that holds only for samples at least 30 days
+old: a simulator seeded within the last 30 days shows its samples only after they come due, Oct 27
+for the current seed, unless it is launched with `-SiftMinimumAgeDays 0`. Until then its cards are
+the stock photos.
 
 **Applies to** `Sift/Services/PhotoKitLibrary.swift`, `ARCHITECTURE.md` §10, `README.md`
 "Running on the simulator".
@@ -1366,6 +1388,63 @@ match them. The bundle grows by the six PNGs.
 **Applies to** `Sift/Components/BlockView.swift`, `Sift/Features/Permission/*`, `TrashModel`,
 `PurgeAllSheet`, `AssetViewer`, `EmptyState`, `Sift/Resources/SampleScreenshots/`, `DSSize.blockFaceShare`,
 `UI_DESIGN.md` §9, §10, §11.1, §12, `IA.md` §2 row C and A3.
+
+---
+
+## ADR-032 · Review asks only about screenshots at least 30 days old; newer ones wait and join by themselves
+
+**Context.** On 2026-09-28 the owner asked: "보관한지 30일 지난 스크린 샷만 킵할껀지 지울껀지 묻도록 해줘"
+(ask whether to keep or delete only the screenshots that have been kept for more than 30 days). The
+sentence reads three ways, and the owner was shown all three: (A) review only screenshots taken 30 or
+more days ago, so a recent one reaches Review only once it comes of age; (B) review everything as
+now, and ask again about an archived screenshot 30 days after it was archived; (C) review everything
+as now, and prompt about screenshots that have sat in Trash for 30 days or more. The owner chose (A),
+on this preview of it: "최근 30일 스크린샷 (예: 어제 찍은 티켓) → 리뷰에 나오지 않음 → 30일이 지나면 자동으로
+리뷰에 합류" (a screenshot from the last 30 days, such as yesterday's ticket, does not appear in
+Review; once 30 days have passed it joins Review by itself).
+
+**Decision.** (A). A screenshot is **due** when its `creationDate` is at least
+`ReviewPolicy.minimumAgeDays` (30) days before the catalog's reference date, the boundary included.
+A day is 86 400 s and no `Calendar` is involved, so the threshold does not move with a time zone or
+a daylight-saving change, and a test can hit it to the second. The queue is the unreviewed
+screenshots that are due, newest first; an unreviewed screenshot that is not due yet is **waiting**
+and is on no screen. `unreviewed` keeps ADR-025's meaning and nothing new is persisted: the queue
+gains a second derived condition, not a field. The reference date is `now()` when the catalog is
+built and at the start of every refresh (a change in Photos, a launch, a return to the foreground),
+and it never moves back, so the queue holds still between refreshes and a screenshot ages in on the
+next one, joining behind the front card like any newcomer (`IA.md` §5). The counter's denominator is
+the due screenshots, reviewed or not; `Catalog.total` still counts every screenshot, because the
+limited-access interstitial and its selection check are about what the user picked. A library whose
+screenshots are all waiting is `allDone`, not `noScreenshots`, and the all-done block names the day
+the next one comes due, on its own line under the Trash line: "Next screenshot: Oct 12.", with the
+date from `Date.FormatStyle` in the user's locale. So that a simulator, whose seeded images are
+recent, can still be reviewed, a DEBUG simulator build reads `-SiftMinimumAgeDays <n>` from the
+launch arguments; the scheme does not pass it, so ▶︎ shows the real rule. The two constants, 30 days
+and 86 400 s, live in `Sift/Data/ReviewPolicy.swift` and not in `DesignSystem/`: a product rule's
+constants live in `Data/` under the ADR that set them, and design values stay `DS` tokens, so P-12,
+which keeps design values out of views, does not apply to them.
+
+**Consequences.** A first launch whose screenshots are all recent opens on the all-done block and a
+date, not on a card. The age rule applies to the queue only: a recent screenshot hearted in Photos
+is a Favorite at once (A1), and Library and Trash show what they hold at any age. Nothing announces
+a screenshot coming due — there is no background work and no notification — so it appears at the
+next refresh, and the date on the block is a day, not a time. Because the reference date never moves
+back, a device clock set back cannot turn a due card into a waiting one; the price is that a clock
+set forward and then back keeps the later date until the next launch. A new screenshot under 30 days
+old no longer takes `noScreenshots` to `reviewing`; it takes it to `allDone`, and that transition
+fires neither the burst nor `DSHaptic.queueDone`, because no queue was finished: `ReviewModel` now
+counts a finished queue only when the queue runs out under review. The unit tests pass the 30-day
+rule to the catalog rather than read `ReviewPolicy.minimumAge`, because the `Sift` scheme's Test
+action uses the Run action's arguments, and a local scheme edit would otherwise change what they
+check. `-SiftAllImages` moves behind the same simulator-only gate (ADR-027, Correction of
+2026-09-28). On the simulator the screenshot tour runs on, Review now shows only the stock photos,
+taken between 2009 and 2018; the six seeded samples, dated 2026-09-27, are not due until Oct 27.
+
+**Applies to** `Sift/Data/ReviewPolicy.swift`, `Sift/Data/Catalog.swift`,
+`Sift/Features/Review/ReviewModel.swift`, `ReviewScreen`, `EmptyState`,
+`Sift/Services/PhotoKitLibrary.swift`, `project.yml`, `SiftTests/`, `IA.md` §1, §4, §5, §7, §8,
+`ia.html`, `UI_DESIGN.md` §11.2, §12, `ARCHITECTURE.md` §1, §3, §5, §9, §10, `README.md` "Running on
+the simulator", ADR-025, ADR-027; P-03.
 
 ---
 

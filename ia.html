@@ -646,11 +646,12 @@ pre.tree { background: var(--color-surface-raised); border-radius: var(--radius-
       <div class="hero__inner">
         <p class="eyebrow">Sift</p>
         <h1>One object, three piles, four screens.</h1>
-        <p>A screenshot is the only thing the app is about. It ends up in the trash list, the archive list or Photos’ favorites; the queue is whatever is in none of them, newest first. Every screen, route and side effect on this page follows from that one rule. The written version is <code class="inline">docs/knowledge/IA.md</code>.</p>
+        <p>A screenshot is the only thing the app is about. It ends up in the trash list, the archive list or Photos’ favorites; the queue is whatever is in none of them and at least 30 days old, newest first, and a newer one waits until it comes of age. Every screen, route and side effect on this page follows from those two rules. The written version is <code class="inline">docs/knowledge/IA.md</code>.</p>
         <div class="hero__pills">
           <span>Confirmed</span>
           <span>ADR-025</span>
-          <span>v1.0</span>
+          <span>ADR-032</span>
+          <span>v1.1</span>
         </div>
       </div>
     </header>
@@ -679,17 +680,17 @@ pre.tree { background: var(--color-surface-raised); border-radius: var(--radius-
 <line class="edge" x1="260" y1="170" x2="420" y2="247"/><rect class="pill" x="274.8" y="213" width="110.5" height="18" rx="9"/><text class="pill-text" x="330" y="226" text-anchor="middle">swipe up · FAVE</text>
 <rect class="tile-ink" x="720" y="90" width="210" height="120" rx="14"/>
 <text class="on-ink" x="825.0" y="138.0" text-anchor="middle">Queue</text>
-<text class="on-ink-sub" x="825.0" y="156.0" text-anchor="middle">none of the three</text>
+<text class="on-ink-sub" x="825.0" y="156.0" text-anchor="middle">none of the three · 30+ days old</text>
 <text class="on-ink-sub" x="825.0" y="171.0" text-anchor="middle">newest first · derived, never stored</text>
 <path class="edge" d="M150,210 C 150,332 800,332 800,212"/><rect class="pill" x="394.6" y="329" width="160.9" height="18" rx="9"/><text class="pill-text" x="475" y="342" text-anchor="middle">not in any of the three</text></svg></div>
         <p class="subhead">Derivation rules</p>
         <div class="grid-cards cols-2">
-          <div class="card"><p class="t-subhead">1 · unreviewed</p><p class="t-body">Not in the trash list, not in the archive list, not favorited. The queue is every screenshot that is unreviewed, newest first; the front card is the newest unreviewed one.</p></div>
+          <div class="card"><p class="t-subhead">1 · unreviewed, and due</p><p class="t-body">Not in the trash list, not in the archive list, not favorited. The queue is every unreviewed screenshot taken at least 30 days before the last refresh, newest first; the front card is the newest of them. A newer unreviewed one is waiting: on no screen until it comes of age, then in the queue by itself (ADR-032).</p></div>
           <div class="card"><p class="t-subhead">2 · Trash wins on display</p><p class="t-body">A screenshot in the trash list appears only in Trash, even if it is also favorited or archived. The app clears the other two when it trashes; the rule covers edits made in Photos afterwards.</p></div>
           <div class="card"><p class="t-subhead">3 · Library segments</p><p class="t-body">Favorites is favorited and not trashed; Archive is in the archive list and not trashed. A screenshot can be in both segments and then appears in both.</p></div>
-          <div class="card"><p class="t-subhead">4 · Counter</p><p class="t-body">total is what the app can see, reviewed is total minus the queue. The header shows reviewed + 1 / total while a card is up, and total / total when the queue is empty.</p></div>
+          <div class="card"><p class="t-subhead">4 · Counter</p><p class="t-body">total is what the app can see; reviewTotal is the due ones among them, reviewed or not; reviewed is reviewTotal minus the queue. The header shows reviewed + 1 / reviewTotal while a card is up; when the queue is empty the all-done block takes its place. A waiting screenshot counts in total only.</p></div>
         </div>
-        <div class="note" style="margin-top:var(--space-s4)"><strong>Consequence.</strong> A screenshot hearted in Photos before the app ever saw it is already a Favorite and never enters the queue; un-hearting it later puts it back. The app owns no “reviewed” flag that could drift from what Photos shows. That is assumption A1 below.</div>
+        <div class="note" style="margin-top:var(--space-s4)"><strong>Consequence.</strong> A screenshot hearted in Photos before the app ever saw it is already a Favorite and never enters the queue; un-hearting it later puts it back. The app owns no “reviewed” flag that could drift from what Photos shows, and no “waiting” flag either: being due is the creation date against the last refresh. That is assumption A1 below.</div>
       </section>
 
 
@@ -825,7 +826,8 @@ pre.tree { background: var(--color-surface-raised); border-radius: var(--radius-
 
 Review
 ├── total == 0               → noScreenshots block
-├── queue empty              → allDone block, Trash count in the copy
+├── queue empty              → allDone block, Trash count and next arrival in the copy;
+│                              also when every screenshot is still waiting
 └── otherwise                → the deck</pre>
       </section>
 
@@ -854,7 +856,8 @@ Review
 <text class="on-ink" x="840.0" y="373.0" text-anchor="middle">Permission · denied</text>
 <line class="edge" x1="200" y1="68" x2="400" y2="68"/><rect class="pill" x="269.9" y="45" width="60.1" height="18" rx="9"/><text class="pill-text" x="300" y="58" text-anchor="middle">fetched</text>
 <path class="edge" d="M60,96 C 12,150 12,300 60,340"/><rect class="pill" x="31.9" y="113" width="60.1" height="18" rx="9"/><text class="pill-text" x="62" y="126" text-anchor="middle">total 0</text>
-<line class="edge" x1="200" y1="355" x2="430" y2="96"/><rect class="pill" x="262.9" y="216" width="104.2" height="18" rx="9"/><text class="pill-text" x="315" y="229" text-anchor="middle">new screenshot</text>
+<line class="edge" x1="200" y1="355" x2="430" y2="96"/><rect class="pill" x="262.9" y="216" width="104.2" height="18" rx="9"/><text class="pill-text" x="315" y="229" text-anchor="middle">due screenshot</text>
+<line class="edge" x1="200" y1="378" x2="400" y2="378"/><rect class="pill" x="226.0" y="382" width="148.0" height="18" rx="9"/><text class="pill-text" x="300" y="395" text-anchor="middle">new screenshot, waits</text>
 <line class="edge" style="marker-start:url(#arr)" x1="400" y1="78" x2="200" y2="205"/><rect class="pill" x="244.8" y="132" width="110.5" height="18" rx="9"/><text class="pill-text" x="300" y="145" text-anchor="middle">rewind · landed</text>
 <line class="edge" x1="570" y1="58" x2="760" y2="58"/><rect class="pill" x="644.4" y="35" width="41.2" height="18" rx="9"/><text class="pill-text" x="665" y="48" text-anchor="middle">drag</text>
 <line class="edge" x1="760" y1="82" x2="570" y2="82"/><rect class="pill" x="578.2" y="91" width="173.5" height="18" rx="9"/><text class="pill-text" x="665" y="104" text-anchor="middle">release short · snap back</text>
@@ -864,7 +867,7 @@ Review
 <line class="edge" x1="470" y1="190" x2="470" y2="96"/><rect class="pill" x="468.6" y="134" width="72.7" height="18" rx="9"/><text class="pill-text" x="505" y="147" text-anchor="middle">next card</text>
 <line class="edge" x1="500" y1="246" x2="500" y2="340"/><rect class="pill" x="502.4" y="284" width="85.3" height="18" rx="9"/><text class="pill-text" x="545" y="297" text-anchor="middle">queue empty</text>
 <text class="caption" x="485" y="422" text-anchor="middle">back to reviewing when a screenshot becomes unreviewed again:</text>
-<text class="caption" x="485" y="437" text-anchor="middle">restore · move out of Library · un-heart in Photos · a new screenshot</text>
+<text class="caption" x="485" y="437" text-anchor="middle">restore · move out of Library · un-heart in Photos · a screenshot coming due</text>
 <line class="edge edge-dash" x1="840" y1="246" x2="840" y2="340"/><rect class="pill" x="635.5" y="291" width="249.1" height="18" rx="9"/><text class="pill-text" x="760" y="304" text-anchor="middle">authorization revoked, from any state</text></svg></div><p class="subhead">Transitions</p><div class="tbl-scroll"><table class="tbl"><thead><tr><th>From</th><th>Event</th><th>To</th><th>Side effect</th></tr></thead><tbody>
 <tr><td><code>reviewing</code></td><td>drag starts</td><td><code>dragging</code></td><td>—</td></tr>
 <tr><td><code>dragging</code></td><td>release below threshold, or the down sector</td><td><code>reviewing</code></td><td>snap back</td></tr>
@@ -875,9 +878,13 @@ Review
 <tr><td><code>promoting</code></td><td>queue empty</td><td><code>allDone</code></td><td><code>DSHaptic.queueDone</code></td></tr>
 <tr><td><code>reviewing</code> · <code>allDone</code></td><td>rewind, entry present</td><td><code>rewinding</code></td><td>side effect reversed exactly</td></tr>
 <tr><td><code>rewinding</code></td><td>landing</td><td><code>reviewing</code></td><td>—</td></tr>
-<tr><td><code>allDone</code></td><td>a screenshot becomes unreviewed again</td><td><code>reviewing</code></td><td>it takes its place by date</td></tr>
+<tr><td><code>allDone</code></td><td>a due screenshot becomes unreviewed again, or a waiting one comes due at a refresh</td><td><code>reviewing</code></td><td>it takes its place by date</td></tr>
 <tr><td>any</td><td>authorization revoked</td><td>Permission · denied</td><td>stack discarded</td></tr>
-<tr><td><code>reviewing</code> · <code>allDone</code></td><td>a new screenshot appears</td><td>same state, total + 1</td><td>joins by date, behind the front card</td></tr>
+<tr><td><code>reviewing</code> · <code>allDone</code></td><td>a new screenshot under 30 days old appears</td><td>same state; total + 1, the counter unchanged</td><td>it waits</td></tr>
+<tr><td><code>noScreenshots</code></td><td>a new screenshot under 30 days old appears</td><td><code>allDone</code></td><td>it waits; the block names the day it comes due; no burst</td></tr>
+<tr><td><code>reviewing</code></td><td>a new screenshot already 30 days old appears</td><td>same state; total and reviewTotal + 1</td><td>joins by date, behind the front card, never under the thumb</td></tr>
+<tr><td><code>allDone</code> · <code>noScreenshots</code></td><td>a new screenshot already 30 days old appears</td><td><code>reviewing</code></td><td>total and reviewTotal + 1; it takes its place by date</td></tr>
+<tr><td><code>reviewing</code></td><td>a waiting screenshot comes due at a refresh</td><td>same state, reviewTotal + 1</td><td>joins behind the front card, never under the thumb</td></tr>
 <tr><td><code>reviewing</code></td><td>the front screenshot is deleted in Photos</td><td><code>promoting</code></td><td>skipped silently, no verdict</td></tr>
 </tbody></table></div>
       </section>
@@ -920,8 +927,8 @@ Review
 <tr><td>Authorization</td><td>the system</td><td>—</td><td>yes</td><td>the user, in Settings</td></tr>
 </tbody></table></div>
         <div class="grid-cards cols-2" style="margin-top:var(--space-s4)">
-          <div class="card"><p class="t-subhead">Deliberately not stored</p><p class="t-body">No “onboarding seen” flag: Permission appears whenever the status makes it necessary and never otherwise. No per-screenshot “reviewed” flag: derived. No copy of the favorite flag. No session log, no statistics.</p></div>
-          <div class="card"><p class="t-subhead">After a reinstall</p><p class="t-body">The trash list is gone, and because nothing was deleted from Photos the trashed screenshots simply return to the queue. The archive list is gone too, but the album is not: an empty store adopts an album titled with the brand name and seeds the list from its members.</p></div>
+          <div class="card"><p class="t-subhead">Deliberately not stored</p><p class="t-body">No “onboarding seen” flag: Permission appears whenever the status makes it necessary and never otherwise. No per-screenshot “reviewed” flag: derived. No “waiting” flag and no schedule for when a screenshot comes due: derived from its creation date. No copy of the favorite flag. No session log, no statistics.</p></div>
+          <div class="card"><p class="t-subhead">After a reinstall</p><p class="t-body">The trash list is gone, and because nothing was deleted from Photos the trashed screenshots simply return to the queue (a recent one waits until it is 30 days old). The archive list is gone too, but the album is not: an empty store adopts an album titled with the brand name and seeds the list from its members.</p></div>
         </div>
       </section>
 
@@ -932,7 +939,7 @@ Review
         <p class="section__lead">The app observes the library and reconciles on every change and on every return to the foreground. Because the queue is derived, most edits made in Photos need no special case; these are the ones with a visible effect.</p>
 <div class="tbl-scroll"><table class="tbl"><thead><tr><th>Change made in Photos</th><th>Effect in the app</th></tr></thead><tbody>
 <tr><td>A screenshot is deleted</td><td>dropped from the queue and both lists silently; if it was the front card the deck promotes without a verdict</td></tr>
-<tr><td>A screenshot is taken</td><td>joins the queue by date, behind the front card; total rises; noScreenshots becomes reviewing</td></tr>
+<tr><td>A screenshot is taken</td><td>waits 30 days: total rises at once, the counter does not; noScreenshots becomes allDone, whose copy names the day it comes due. At the first refresh after that it joins the queue by date, behind the front card</td></tr>
 <tr><td>A screenshot is hearted</td><td>leaves the queue; appears in Library · Favorites</td></tr>
 <tr><td>A heart is removed</td><td>returns to the queue unless it is in the trash or archive list</td></tr>
 <tr><td>A screenshot is removed from the archive album by hand</td><td>treated as un-archiving: the entry is dropped, the screenshot returns to the queue</td></tr>
@@ -941,7 +948,8 @@ Review
 <tr><td>Authorization is revoked</td><td>Permission · denied; the stack is discarded</td></tr>
 <tr><td>Access widens from limited to full</td><td>Review; the acknowledged selection count is cleared</td></tr>
 </tbody></table></div>
-        <div class="note" style="margin-top:var(--space-s4)"><strong>Never under the thumb.</strong> A screenshot that arrives, leaves or changes membership mid-drag is applied at the next promoting, not during dragging or exiting.</div>
+        <div class="note" style="margin-top:var(--space-s4)"><strong>Returns to the queue</strong> means becomes unreviewed: a screenshot under 30 days old waits instead, and joins at the first refresh after it comes of age (ADR-032).</div>
+        <div class="note" style="margin-top:var(--space-s4)"><strong>Never under the thumb.</strong> A screenshot that arrives, leaves, changes membership or comes due mid-drag is applied behind the pinned front card; the front card itself changes only at the next promoting.</div>
       </section>
 
 
@@ -977,7 +985,7 @@ Review
 
     </div>
     <footer class="footer">
-      <p>Information architecture v1.0, confirmed 2026-09-27. Diagrams and tables follow <code class="inline">docs/knowledge/IA.md</code>; the page is styled from the same tokens as <code class="inline">design-system.html</code>.</p>
+      <p>Information architecture v1.1, 2026-09-28: confirmed 2026-09-27 (ADR-025), with the 30-day rule of ADR-032 added 2026-09-28. Diagrams and tables follow <code class="inline">docs/knowledge/IA.md</code>; the page is styled from the same tokens as <code class="inline">design-system.html</code>.</p>
     </footer>
   </main>
 </div>

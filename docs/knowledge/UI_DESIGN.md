@@ -24,7 +24,7 @@
 > discount every hit the same command reports for `'Sift/'`, plus the one path join named above. The
 > lint does not check any of this; it checks `DesignSystem/` only.
 
-v1.4 · 2026-09-24 · light-only · iOS 17 SwiftUI
+v1.5 · 2026-09-28 · light-only · iOS 17 SwiftUI
 
 The product is a screenshot triage app. It shows one screenshot at a time as a card, newest
 unreviewed first, with a progress counter. Swipe left sends it to the app's own Trash, right to a
@@ -1452,14 +1452,24 @@ is the only place external references are cited.
 | Bottom | `VerdictButtonRow` + `RewindButton` | enabled · pressed · disabled | captions `"Trash"` `"Fave"` `"Archive"` `"Rewind"` |
 | Empty | `EmptyState` | allDone · noScreenshots | see below |
 
-**Queue model.** One queue, newest unreviewed first. A restored item returns to unreviewed and
-lands back in date order, so it surfaces where the user expects it rather than jumping to the
-front. Screenshots taken during a session join silently through `PHPhotoLibraryChangeObserver` —
-the total in the counter goes up, nothing is reordered under the user's thumb.
+**Queue model.** One queue, newest unreviewed first, of screenshots at least 30 days old
+(ADR-032). A newer one, such as yesterday's ticket, is not asked about yet: it waits, on no screen,
+and joins by itself at the first refresh after it turns 30 days old. A restored item returns to
+unreviewed and lands back in date order, so it surfaces where the user expects it rather than
+jumping to the front. A screenshot taken during a session waits like any other and leaves the
+counter alone; one that comes due joins through the same refresh, behind the front card — the total
+in the counter goes up, nothing is reordered under the user's thumb. The counter's total is the
+screenshots old enough to review, so when every screenshot is still waiting there is no count to
+show and the all-done block is up.
 
 **All done.** `DSBlock.allDone` (lime, `delighted` face): headline
-`"Inbox zero, screenshot edition."`, body `"Trash is holding 27 — empty it whenever."`, CTA
-`"Open Trash (27)"`. A confetti burst plays for `DSMotion.confetti`, gated on Reduce Motion. Rewind stays available.
+`"Inbox zero, screenshot edition."`, then up to two body lines, each on its own:
+`"Trash is holding 27 — empty it whenever."` when Trash holds anything, and
+`"Next screenshot: Oct 12."` when a screenshot is waiting, dated by `Date.FormatStyle` (month
+abbreviated, day) in the user's locale. With neither, there is no body. CTA `"Open Trash (27)"`. A
+library whose screenshots are all still waiting shows this block too, not `noScreenshots`. A
+confetti burst plays for `DSMotion.confetti` when the queue runs out under review, gated on Reduce
+Motion. Rewind stays available.
 
 **No screenshots.** `"No screenshots. Honestly, impressive."`
 
@@ -1577,6 +1587,7 @@ Example strings, all from the screens above:
 | Denied | `"\(Brand.name) can't see your screenshots yet."` · `"Open Settings"` · `"Not now"` |
 | Card chip | `"Sep 21 · 2:14 PM · 1.2 MB"` |
 | All done | `"Inbox zero, screenshot edition."` · `"Trash is holding 27 — empty it whenever."` · `"Open Trash (27)"` |
+| All done, a screenshot waiting | `"Next screenshot: Oct 12."`, on its own line under the Trash line; the date is `Date.FormatStyle`, month abbreviated and day (ADR-032) |
 | No screenshots | `"No screenshots. Honestly, impressive."` |
 | Trash header | `"Trash · 27 items · 48 MB"` |
 | Purge-all button | `"Delete all (27)"` (the size stays in the header) |
@@ -1935,6 +1946,13 @@ the expressive palette to serve as blocks, `onboarding` on `trash.main` and `lim
    on its own and inserts the ones that resolve, so splitting the family later still falls back one
    cut at a time ([§2 License note](#license-note-adr-003)).
 
+9. **The onboarding face.** §9 assigns the `eager` face to `DSBlock.onboarding`, but §11.1 gives the top of the screen to `DemoStack` and has no slot for a face. The build shows no face there. Owner to confirm.
+10. **The demo's height.** §11.1 says "the top 55 %"; no layout-fraction token exists, so the built demo takes whatever height the copy leaves (about 58 % on an iPhone 17 at the default text size) and steps aside at accessibility sizes.
+11. **Implementer values awaiting the owner's eye.** `DSMotion.stagger` 0.02 s (ADR-028), the all-done burst as three verdict glyphs (ADR-029), `DSSize.viewerZoomMax` 4 (ADR-030), and the demo's card size (derived from the product card, about 179 × 375 pt).
+12. **Secondary button shape.** §10 gives `.secondary` `DSRadius.md` and `DSTextRole.labelSmall`; the guide draws it as a pill in `.label`. The app follows §10. One of the two must change.
+13. **Pill labels at accessibility sizes.** A `DSRadius.pill` button whose label wraps to three lines has its first and last lines clipped by the capsule's ends (seen on "Delete all (27)" at AX5). A cap on the radius once the label wraps is the likely fix.
+14. **Icons on buttons.** §8 lists glyphs for the viewer's actions, but `DSButton` has no icon slot; the viewer's actions are text only.
+
 ---
 
 ## Changelog
@@ -1946,9 +1964,4 @@ the expressive palette to serve as blocks, `onboarding` on `trash.main` and `lim
 | v1.2 | 2026-09-24 | Token corrections. The destructive button named as a `trash.main` fill with a navy `ink` label at 4.61:1; the two blocks that borrow a verdict color named in §1 and §9; the face rule restated as round parentheses plus one world-script glyph; the `--grid-breakpoint` exception wording corrected against the guide's twelve `1199.98px` queries. |
 | v1.3 | 2026-09-24 | Propagation of the `DSBlock` and `DSFont` changes. §9 and §10: the block CTA is `DSBlock.ctaFill` with `DSBlock.ctaLabel` and the block focus ring is `DSBlock.focusRing`, replacing the free choice between a navy and a white pill and replacing `DSColor.focus` on a block. §1: the contrast block regenerated at 43 pairs, 0 failures, and the 60/30/10 rule corrected to four places. §2: `DSFont.availableDisplayNames` replaces `displayAvailability`, and the `0.06em` stamp tracking recorded as a rounding of 0.0625 em. §13: the cobalt exception stated. §14: the CSS-name note recounted. §0: the type list completed and `README.md` removed from the prose that names the product. |
 | v1.4 | 2026-09-24 | Citation and reconciliation pass. Every cross-file line citation and every contrast-row number replaced by a token pair, a quoted `Use` string, a selector or a recorded command; the product-name tally recounted (`design-system.html` 10, not 8) and restated as a rule; §9 and §10 reconciled on one filled action per block, with the second action bare text in the block's ink and a fifth button kind for it; §5 restated for `.dsFocusRing`'s `color:` parameter and the measurement that covers a block; rung 2 of the destructive ladder corrected to the count alone; §14's `max-width` parenthesis corrected from four queries to eight properties; `ink2` 6.19 and `inkMuted` 4.77 folded in from the `DSColor` comments. |
-9. **The onboarding face.** §9 assigns the `eager` face to `DSBlock.onboarding`, but §11.1 gives the top of the screen to `DemoStack` and has no slot for a face. The build shows no face there. Owner to confirm.
-10. **The demo's height.** §11.1 says "the top 55 %"; no layout-fraction token exists, so the built demo takes whatever height the copy leaves (about 58 % on an iPhone 17 at the default text size) and steps aside at accessibility sizes.
-11. **Implementer values awaiting the owner's eye.** `DSMotion.stagger` 0.02 s (ADR-028), the all-done burst as three verdict glyphs (ADR-029), `DSSize.viewerZoomMax` 4 (ADR-030), and the demo's card size (derived from the product card, about 179 × 375 pt).
-12. **Secondary button shape.** §10 gives `.secondary` `DSRadius.md` and `DSTextRole.labelSmall`; the guide draws it as a pill in `.label`. The app follows §10. One of the two must change.
-13. **Pill labels at accessibility sizes.** A `DSRadius.pill` button whose label wraps to three lines has its first and last lines clipped by the capsule's ends (seen on "Delete all (27)" at AX5). A cap on the radius once the label wraps is the likely fix.
-14. **Icons on buttons.** §8 lists glyphs for the viewer's actions, but `DSButton` has no icon slot; the viewer's actions are text only.
+| v1.5 | 2026-09-28 | ADR-032 in §11.2 and §12: Review asks only about screenshots at least 30 days old, the counter counts those, and the all-done block adds "Next screenshot: Oct 12." on its own line. §15 items 9 to 14, which had landed below this table, moved back into §15. The app-phase edits of 2026-09-27 (ADR-028 to ADR-031) are recorded in those ADRs and have no row here. |

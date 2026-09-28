@@ -4,20 +4,13 @@ import Testing
 
 @MainActor
 struct CatalogTests {
-    private func make(shots: [Screenshot], state: StoreState? = nil, status: PhotoAuthorization = .authorized)
-        -> (Catalog, FakePhotoLibrary, InMemoryPersistence) {
+    private func make(shots: [Screenshot], state: StoreState? = nil, status: PhotoAuthorization = .authorized,
+                      clock: TickingClock = TickingClock()) -> (Catalog, FakePhotoLibrary, InMemoryPersistence) {
         let library = FakePhotoLibrary(status: status, shots: shots)
         let persistence = InMemoryPersistence(initial: state)
-        let clock = TickingClock()
-        let catalog = Catalog(library: library, persistence: persistence, now: { clock.next() })
+        let catalog = Catalog(library: library, persistence: persistence, now: { clock.next() },
+                              minimumAge: Fixtures.minimumAge)
         return (catalog, library, persistence)
-    }
-
-    /// Strictly increasing timestamps so "most recently trashed first" is deterministic.
-    private final class TickingClock: @unchecked Sendable {
-        private let lock = NSLock()
-        private var t = 0.0
-        func next() -> Date { lock.withLock { t += 1; return Date(timeIntervalSince1970: t) } }
     }
 
     @Test func queueIsNewestFirstAndSkipsPreexistingHearts() async {
@@ -113,9 +106,8 @@ struct CatalogTests {
     }
 
     @Test func emptyStoreAdoptsExistingAlbum() async {
-        let library = FakePhotoLibrary(shots: Fixtures.shots(3))
+        let (catalog, library, _) = make(shots: Fixtures.shots(3))
         await library.seedAlbum(title: Brand.archiveAlbumTitle, members: ["s2"])
-        let catalog = Catalog(library: library, persistence: InMemoryPersistence())
         await catalog.load()
         #expect(catalog.archived.map(\.id) == ["s2"])
         #expect(catalog.queue.map(\.id) == ["s1", "s3"])
@@ -188,5 +180,71 @@ struct CatalogTests {
         await catalog.refresh()
         #expect(catalog.trashed.isEmpty)
         #expect(catalog.state.trash.isEmpty)
+    }
+
+    // MARK: - ADR-032: only screenshots at least 30 days old are reviewed
+
+    /// Screenshots under 30 days old wait: out of the queue and out of the counter's denominator, but
+    /// in `total`, which the limited-access interstitial counts. A reviewed one (hearted) does not
+    /// wait, and the oldest waiting one is the next to arrive.
+    @Test func recentScreenshotsWaitOutsideTheQueue() async {
+        let recent = [Fixtures.shot("r1", takenAt: Fixtures.clockStart - 1 * Fixtures.day),
+                      Fixtures.shot("r2", takenAt: Fixtures.clockStart - 10 * Fixtures.day),
+                      Fixtures.shot("r3", takenAt: Fixtures.clockStart - 5 * Fixtures.day, favorite: true)]
+        let (catalog, _, _) = make(shots: Fixtures.shots(2) + recent)
+        await catalog.load()
+        #expect(catalog.queue.map(\.id) == ["s1", "s2"])
+        #expect(catalog.waiting.map(\.id) == ["r2", "r1"])   // oldest first
+        #expect(catalog.nextArrival == Date(timeIntervalSince1970: Fixtures.clockStart + 20 * Fixtures.day))
+        #expect(catalog.total == 5)
+        #expect(catalog.reviewTotal == 2)
+        #expect(catalog.reviewedCount == 0)
+        #expect(catalog.favorites.map(\.id) == ["r3"])        // Library does not wait
+    }
+
+    /// The queue holds still between refreshes; a screenshot that has come of age joins it on the next
+    /// refresh, as the newest due screenshot.
+    @Test func aScreenshotAgesInOnTheNextRefresh() async {
+        let clock = TickingClock()
+        let r1 = Fixtures.shot("r1", takenAt: Fixtures.clockStart - 29 * Fixtures.day)
+        let (catalog, _, _) = make(shots: Fixtures.shots(2) + [r1], clock: clock)
+        await catalog.load()
+        #expect(catalog.waiting.map(\.id) == ["r1"])
+        let loadedAt = catalog.referenceDate
+        clock.advance(by: 2 * Fixtures.day)                    // r1 is past 30 days now
+        #expect(catalog.queue.map(\.id) == ["s1", "s2"])      // still measured at the last refresh
+        await catalog.refresh()
+        #expect(catalog.referenceDate > loadedAt)
+        #expect(catalog.queue.map(\.id) == ["r1", "s1", "s2"])
+        #expect(catalog.waiting.isEmpty && catalog.nextArrival == nil)
+        #expect(catalog.reviewTotal == 3 && catalog.reviewedCount == 0)
+    }
+
+    /// A device clock set back does not move the reference date back, so a due card stays due.
+    @Test func settingTheClockBackKeepsADueScreenshotDue() async {
+        let clock = TickingClock()
+        let r1 = Fixtures.shot("r1", takenAt: Fixtures.clockStart - 30.5 * Fixtures.day)
+        let (catalog, _, _) = make(shots: [r1], clock: clock)
+        await catalog.load()
+        let loadedAt = catalog.referenceDate
+        clock.advance(by: -Fixtures.day)                       // r1 would read 29.5 days old
+        await catalog.refresh()
+        #expect(catalog.referenceDate == loadedAt)
+        #expect(catalog.queue.map(\.id) == ["r1"] && catalog.waiting.isEmpty)
+    }
+
+    /// The boundary belongs to the queue: exactly 30 days old is due, one second younger waits.
+    @Test func exactlyThirtyDaysOldIsDue() async {
+        let reference = Date(timeIntervalSince1970: Fixtures.clockStart)
+        let edge = Fixtures.shot("edge", takenAt: Fixtures.clockStart - Fixtures.minimumAge)
+        let inside = Fixtures.shot("inside", takenAt: Fixtures.clockStart - Fixtures.minimumAge + 1)
+        let catalog = Catalog(library: FakePhotoLibrary(shots: [edge, inside]), persistence: InMemoryPersistence(),
+                              now: { reference }, minimumAge: Fixtures.minimumAge)
+        await catalog.load()
+        #expect(Fixtures.minimumAge == 30 * 86_400)
+        #expect(catalog.referenceDate == reference)
+        #expect(catalog.queue.map(\.id) == ["edge"])
+        #expect(catalog.waiting.map(\.id) == ["inside"])
+        #expect(catalog.nextArrival == reference.addingTimeInterval(1))
     }
 }

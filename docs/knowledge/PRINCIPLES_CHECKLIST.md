@@ -1,6 +1,6 @@
 # Principles Checklist
 
-v1.4 · 2026-09-24 · 27 lines for the 23 principles in `DESIGN_PRINCIPLES.md`: every principle
+v1.5 · 2026-09-28 · 27 lines for the 23 principles in `DESIGN_PRINCIPLES.md`: every principle
 gets a line, P-19 gets four, because its contrast table, its rule for text on a verdict fill, its
 focus ring and its rule for color on a block are checked separately, and P-15 gets two, because
 gating an animation and keeping a blanket reset off a substitution are different mistakes. Nothing
@@ -81,10 +81,10 @@ python3 scripts/ds_tokens.py lint                               # last line: lin
 scripts/typecheck-ds.sh                                         # typecheck: OK
 ```
 
-`lint` also prints three `lint: EXCEPTION` lines (`--grid-breakpoint`, `--motion-dur3`,
-`--motion-toast-visible`) and, until the Noun Project credits land, one `lint: WARNING` line. Those
-are expected output, not failures — the verdict is the last line (ADR-022). The EXCEPTION lines are
-the `DECLARATION_ONLY` entries printing themselves with their recorded reason, and the WARNING for an
+`lint` also prints one `lint: EXCEPTION` line per `DECLARATION_ONLY` entry in
+`scripts/ds_tokens.py` and, until the Noun Project credits land, one `lint: WARNING` line. Those are
+expected output, not failures — the verdict is the last line (ADR-022). The EXCEPTION lines are the
+`DECLARATION_ONLY` entries printing themselves with their recorded reason, and the WARNING for an
 empty `DSIconCredits.entries` does not change the exit code. Usage behind those checks is counted by
 exact variable name outside HTML comments, so a variable named only inside `<!-- ... -->` counts as
 unused and `--color-ink` is never satisfied by `--color-ink-muted`.

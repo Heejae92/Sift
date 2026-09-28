@@ -9,6 +9,9 @@ import SwiftUI
 /// system decides, it borrows `DSBlock.allDone`, the other Review state, so both ends of the queue
 /// look the same and only the headline differs.
 ///
+/// `allDone` has up to two body lines, each on its own: the Trash count when Trash holds anything,
+/// and the day the next waiting screenshot comes due when one waits (ADR-032).
+///
 /// `primaryAction` becomes the block's one filled action where the state has one: "Open Trash (N)"
 /// on `allDone` when N > 0, and "Keep sifting" on `trashEmpty`. The other three states have no
 /// action and ignore it. The face is hidden from VoiceOver; the headline is the element that
@@ -16,7 +19,8 @@ import SwiftUI
 struct EmptyState: View {
     enum Kind: Equatable {
         case noScreenshots
-        case allDone(trashCount: Int)
+        /// `nextArrival` is `Catalog.nextArrival`: nil when no screenshot is waiting.
+        case allDone(trashCount: Int, nextArrival: Date?)
         case trashEmpty
         case noFavorites
         case noArchived
@@ -65,13 +69,25 @@ struct EmptyState: View {
     }
 
     private var bodyText: String? {
-        guard case .allDone(let trashCount) = kind, trashCount > 0 else { return nil }
-        return "Trash is holding \(trashCount) — empty it whenever."
+        guard case .allDone(let trashCount, let nextArrival) = kind else { return nil }
+        return Self.allDoneBody(trashCount: trashCount, nextArrival: nextArrival)
+    }
+
+    /// The all-done body (§11.2, ADR-032): the Trash line when Trash holds anything, then
+    /// "Next screenshot: Oct 12." when a screenshot is waiting, each on its own line; nil when neither
+    /// applies. The date is a `Date.FormatStyle`, month abbreviated and day, in `locale`.
+    static func allDoneBody(trashCount: Int, nextArrival: Date?, locale: Locale = .autoupdatingCurrent) -> String? {
+        var lines: [String] = []
+        if trashCount > 0 { lines.append("Trash is holding \(trashCount) — empty it whenever.") }
+        if let nextArrival {
+            lines.append("Next screenshot: \(nextArrival.formatted(.dateTime.month(.abbreviated).day().locale(locale))).")
+        }
+        return lines.isEmpty ? nil : lines.joined(separator: "\n")
     }
 
     private var ctaTitle: String? {
         switch kind {
-        case .allDone(let trashCount):
+        case .allDone(let trashCount, _):
             return trashCount > 0 ? "Open Trash (\(trashCount))" : nil
         case .trashEmpty:
             // The product name is a verb in the copy (§12), so it comes from `Brand` (P-11, ADR-002).

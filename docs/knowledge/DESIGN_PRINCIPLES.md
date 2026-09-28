@@ -1,6 +1,6 @@
 # Design Principles
 
-v1.4 · 2026-09-24 · companion to `UI_DESIGN.md` and `DECISIONS.md`
+v1.5 · 2026-09-28 · companion to `UI_DESIGN.md` and `DECISIONS.md`
 
 ## 0. Purpose
 
@@ -273,11 +273,11 @@ pasted into the guide's `:root` block, which is what `lint` compares against. `l
 `lint: OK` on its last line. `typecheck-ds.sh` must print `typecheck: OK`. A token change that skips
 `emit-css` leaves the guide stale, and `lint` is the only thing that catches it.
 
-A passing `lint` is not a silent one. It also prints three `lint: EXCEPTION` lines for the variables
-the guide declares but cannot consume (`--grid-breakpoint`, `--motion-dur3`,
-`--motion-toast-visible`) and, until the Noun Project credits land, one `lint: WARNING` line for the
-empty `DSIconCredits.entries` (ADR-022, ADR-017). Those four lines are expected output; read the last
-line for the verdict.
+A passing `lint` is not a silent one. It also prints one `lint: EXCEPTION` line per
+`DECLARATION_ONLY` entry in `scripts/ds_tokens.py`, one for each variable the guide declares but
+cannot consume, and, until the Noun Project credits land, one `lint: WARNING` line for the empty
+`DSIconCredits.entries` (ADR-022, ADR-017). Those lines are expected output; read the last line for
+the verdict.
 
 What `lint` actually checks is worth stating exactly, because "unused variable" is easy to misread.
 Usage is counted by **exact name, outside comments**: the lint strips `<!-- ... -->` from the HTML
@@ -298,3 +298,4 @@ The module docstring at the top of `scripts/ds_tokens.py` describes the same thr
 | v1.2 | 2026-09-24 | Token corrections, no new principle numbers. P-06: the destructive button is named as the fourth place a verdict color appears, and it is `trash.main` with a navy `ink` label at 4.61:1, not white on tomato; the two blocks that borrow a verdict color are named. P-08: a face is round parentheses from Forager Bold Overlap plus one world-script glyph drawn by the system font that carries it, seven faces for seven blocks, no glyph twice (ADR-016). P-11: all twenty-two declared types listed, with `Brand` and `VerdictColorSet` as the two deliberate non-`DS` names. P-20: retitled, because `stamp` binds to no Dynamic Type style; ten roles bind, `stamp` is scaled at the call site and returned fixed-size so the 44 pt cap cannot be scaled twice. |
 | v1.3 | 2026-09-24 | Code corrections, no new principle numbers. P-19: cobalt named as the one measured exception, because white on `archive.main` reaches 6.57 and clears the 4.5 text bar on its own, so what gates an `on` color at label size is its measurement and not its name; a paragraph added binding every color on a block to `DSBlock`, where `ctaFill` is the block's ink, `ctaLabel` that ink's counterpart and `focusRing` the ink at full strength, with the measured reasons and the note that only the pill label needed new rows; the table is 43 pairs. P-15: a blanket Reduce Motion reset must exclude whatever implements a substitution, and `revert-layer` does not do that job because with no cascade layers it rolls back to 0 s. P-23: `contrast` now prints 43 pairs. |
 | v1.4 | 2026-09-24 | Code corrections, no new principle numbers. P-13: the focus modifier is `.dsFocusRing(_:cornerRadius:color:)`; the color is a parameter defaulting to `DSColor.focus`, and a control on a block passes `DSBlock.focusRing` (ADR-023). P-19: a block carries exactly one filled action, so a second action is bare text in the block's ink, with the seven `surfaceRaised`-against-block figures and the command that re-derives them; the `ink2` 6.19 and `inkMuted` 4.77 rows on `surfaceRaised` named as the tightest of the ink ramp; the focus paragraph records that the helper takes a color. P-06: the expressive-to-verdict rule stated as one-way, matching the `DSBlock` header comment. P-23: what `lint` counts, spelled out as exact name outside comments, `DECLARATION_ONLY` entries printing as EXCEPTION lines, and the empty icon-credits array being a WARNING and not a failure. Cross-file row and line citations replaced by the pair or the selector they name. |
+| v1.5 | 2026-09-28 | Wording correction, no new principle numbers. P-23: `lint` prints one EXCEPTION line per `DECLARATION_ONLY` entry in `scripts/ds_tokens.py`. The text used to say three and name them; the entries grew to ten as the app phase added tokens the guide cannot consume, so the text no longer carries a count that drifts. |
