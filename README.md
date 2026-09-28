@@ -87,7 +87,9 @@ xcrun simctl install booted <path to Sift.app from the build above>
 xcrun simctl launch booted com.heejaeeo.sift -SiftAllImages
 ```
 
-Grant access in the app when it asks. A release build ignores the argument.
+Grant access in the app when it asks. A release build ignores the argument. Running from Xcode
+(the ▶︎ button, any simulator) needs no setup: the `Sift` scheme passes `-SiftAllImages` on Run,
+and a simulator's stock photos then show up as cards.
 
 Two things the machine may get wrong. If more than one device is named "iPhone 17", pass the
 device by id (`-destination 'platform=iOS Simulator,id=<UDID>'` from `xcrun simctl list devices`),
