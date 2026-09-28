@@ -89,6 +89,24 @@ xcrun simctl launch booted com.heejaeeo.sift -SiftAllImages
 
 Grant access in the app when it asks. A release build ignores the argument.
 
+Two things the machine may get wrong. If more than one device is named "iPhone 17", pass the
+device by id (`-destination 'platform=iOS Simulator,id=<UDID>'` from `xcrun simctl list devices`),
+because `name=` picks whichever one Xcode prefers. And `xcrun simctl privacy grant photos` does not
+satisfy the app's access prompt on recent runtimes: tap "Allow Full Access" in the dialog, or let
+the screenshot tour do it.
+
+The screenshot tour is `SiftUITests/SiftTourTests`: an XCUITest that grants access through the
+system dialog, then walks Permission, Review (three swipes and a rewind), Trash, the viewer, the
+purge sheet and Library, attaching a screenshot at each stop. Run it alone and export the pictures:
+
+```
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project Sift.xcodeproj -scheme Sift -destination 'platform=iOS Simulator,id=<UDID>' -only-testing:SiftUITests -resultBundlePath /tmp/sift-tour.xcresult test
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcrun xcresulttool export attachments --path /tmp/sift-tour.xcresult --output-path /tmp/sift-tour
+```
+
+Start from an erased device (`xcrun simctl erase <UDID>`, then seed again) when the prompt has
+already been answered once; a denied answer cannot be reset from the command line there.
+
 ## Viewing the guide
 
 `open design-system.html`, or serve the folder with `python3 -m http.server` and open
