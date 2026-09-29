@@ -4,6 +4,8 @@ import SwiftUI
 struct SiftApp: App {
     @State private var catalog: Catalog
     @State private var images = ImageLoader()
+    /// The cleanup reminder (ADR-034): the notification center behind a protocol, as Photos is.
+    private let reminders: any ReminderScheduler = UserNotificationsReminderScheduler()
 
     init() {
         let persistence: any StorePersistence
@@ -17,7 +19,7 @@ struct SiftApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            RootView(reminders: reminders)
                 .environment(catalog)
                 .environment(images)
                  // P-16, ADR-006

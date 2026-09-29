@@ -1,6 +1,6 @@
 # Sift · Information architecture
 
-v1.2 · 2026-09-28 · status: Active (ADR-025, the four assumptions confirmed by the owner on 2026-09-27; the 30-day rule of ADR-032 and its follow-ups in ADR-033, chosen by the owner on 2026-09-28) · English
+v1.3 · 2026-09-29 · status: Active (ADR-025, the four assumptions confirmed by the owner on 2026-09-27; the 30-day rule of ADR-032 and its follow-ups in ADR-033, chosen by the owner on 2026-09-28; the cleanup reminder of ADR-034, asked for by the owner on 2026-09-29) · English
 
 This file is the structure the screens hang on: what the app is made of, how the pieces are
 organised, how the user moves between them, and what the app does when Photos changes underneath
@@ -34,7 +34,8 @@ change it.
 The app has one job: put every screenshot in the user's Photos library into one of three piles,
 one card at a time. The information architecture therefore has one object that matters (a
 screenshot), three places it can end up, one derived list (the queue), and four screens. Everything
-else is a sheet, a cover or a system dialog on top of those four.
+else is a sheet, a cover or a system dialog on top of those four, plus one reminder the app hands to
+iOS (ADR-034).
 
 What this document decides:
 
@@ -62,6 +63,8 @@ written in the app phase).
 | Rewind entry | The last committed verdict: `(localIdentifier, verdict, favoriteWasSet)` | — | the app, memory only |
 | Authorization | `PHAuthorizationStatus` for `.readWrite` | — | the system |
 | Acknowledged selection | Under limited access, the number of selected assets the user last dismissed the interstitial for | — | the app, app-local store |
+| Reminder | One pending local notification that repeats every 30 days and carries the moment it was added (ADR-034) | the request identifier, `sift.reminder` | the app adds and replaces it; iOS keeps it |
+| Notification authorization | `UNAuthorizationStatus` | — | the system |
 
 **A verdict is not a field.** TRASH, ARCHIVE and FAVE are the three memberships above. Nothing
 stores "this screenshot was reviewed"; the queue is derived:
@@ -97,7 +100,7 @@ un-hearting it in Photos later puts it back in the queue by the same rule. The a
 
 ## 2. Screen inventory
 
-Four primary screens, three subordinate surfaces, four system surfaces. Nothing else exists in v1.
+Four primary screens, three subordinate surfaces, six system surfaces. Nothing else exists in v1.
 
 | # | Surface | Kind | Reached from | Leaves to | Blocks and empty states |
 |---|---|---|---|---|---|
@@ -111,7 +114,9 @@ Four primary screens, three subordinate surfaces, four system surfaces. Nothing 
 | X1 | iOS photo-library dialog | system | Permission CTA | Review, the limited interstitial, or the denied state | — |
 | X2 | Limited-library picker | system | "Pick more" on the limited interstitial | the interstitial with the new count | — |
 | X3 | iOS delete dialog | system | Viewer "Delete permanently" (one); the Purge-all sheet (all) | Trash, with cells removed or the "Not deleted" toast | — |
-| X4 | Settings app | external | "Open Settings" on the denied state | the app re-routes on the next `scenePhase == .active` | — |
+| X4 | Settings app | external | "Open Settings" on the denied state; "Turn on reminders in Settings" on the `allDone` block | the app re-routes on the next `scenePhase == .active` | — |
+| X5 | iOS notification dialog | system | "Remind me every 30 days" on the `allDone` block, the first time only | the `allDone` block, with the reminder on or declined | — |
+| X6 | The reminder | system notification: a banner, then Notification Center | iOS, 30 days after the queue last ran out under review | a tap opens the app, routed by [§4](#4-launch-routing) | — |
 
 Per-screen regions, components and strings are in `UI_DESIGN.md` §11; the blocks and their faces in
 §9.
@@ -134,7 +139,8 @@ Per-screen regions, components and strings are in `UI_DESIGN.md` §11; the block
 - **Header ownership.** Review: `ProgressCounter` leading, Trash (with count badge) and Library
   trailing. Trash and Library: title leading, back trailing the system way. The Viewer has its own
   bar: date chip and close.
-- **No tab bar** (ADR-011), no deep links, no URL scheme, no widgets, no Shortcuts in v1.
+- **No tab bar** (ADR-011), no deep links, no URL scheme, no widgets, no Shortcuts in v1. A tap on
+  the reminder opens the app without a route of its own (ADR-034).
 
 ---
 
@@ -154,10 +160,13 @@ active
 
 Review
 ├── total == 0               → noScreenshots block
-├── queue empty              → allDone block (Trash count and the next arrival in the copy),
-│                              also when every screenshot is still waiting
+├── queue empty              → allDone block (Trash count, and the next reminder or else the
+│                              next arrival, in the copy), also when every screenshot is still waiting
 └── otherwise                → deck
 ```
+
+A tap on the reminder notification is a launch or a return to the foreground like any other: this
+table decides where it lands, and the reminder carries no route of its own (ADR-034).
 
 The interstitial's acknowledging action stores the number of screenshots picked as the acknowledged
 selection, whatever its label counts; "Pick more" opens the picker and re-evaluates when it closes
@@ -195,7 +204,7 @@ Transitions and their triggers:
 | `reviewing` | verdict button, arrow key, VoiceOver action | `exiting` | synthesized flick |
 | `exiting` | 60 % of the exit duration | `promoting` | the verdict's side effect ([§6](#6-actions-and-where-they-lead)); rewind entry replaced |
 | `promoting` | queue non-empty | `reviewing` | next card fades in |
-| `promoting` | queue empty | `allDone` | `DSHaptic.queueDone` |
+| `promoting` | queue empty | `allDone` | `DSHaptic.queueDone`; the reminder, if on, moved to 30 days from now (ADR-034) |
 | `reviewing`, `allDone` | rewind, entry present | `rewinding` | side effect reversed exactly |
 | `rewinding` | landing | `reviewing` | — |
 | `allDone` | a due screenshot becomes unreviewed again, or a waiting one comes due at a refresh | `reviewing` | it takes its place by date |
@@ -215,6 +224,18 @@ one that comes due raises it by one at the refresh that brings it in.
 launch, cleared when the queue reaches its cap, and invalidated when its screenshot changes hands
 elsewhere — restored from Trash, moved in Library, purged, or deleted in Photos — because there is
 no longer a prior state to return to.
+
+**A finished queue moves the reminder** (ADR-034). Each time the queue runs out under review, the
+transition that fires `DSHaptic.queueDone`, the reminder, if it is on, is replaced by one that fires
+30 days from that moment and every 30 days after. A launch that starts out done and a first screenshot
+that arrives and waits finish nothing, so they leave it where it is. The reminder has three states,
+read from iOS when the `allDone` block appears and on every return to the foreground:
+
+| Reminder | Meaning | The `allDone` block shows |
+|---|---|---|
+| off | notifications allowed, or never asked for, and nothing pending | "Remind me every 30 days", and the "Next screenshot" line when one waits |
+| on | notifications allowed and the request pending | "Next reminder: Nov 28." in place of the "Next screenshot" line, and no reminder action |
+| denied | notifications declined, or allowed with alerts, the lock screen and Notification Center all off | "Turn on reminders in Settings", and the "Next screenshot" line when one waits |
 
 ---
 
@@ -237,10 +258,16 @@ Every action the user can take, and what it does to the three memberships.
 | Permission | Show me the screenshots | — | — | — | — | the iOS photo-library dialog |
 | Permission · limited | Pick more · Sift these N (the ready ones), or Continue when none are ready | — | — | — | re-evaluated | the picker; none |
 | Permission · denied | Open Settings | — | — | — | — | leaves the app |
+| Review · all done | Remind me every 30 days | — | — | — | — | the iOS notification dialog, the first time only |
+| Review · all done | Turn on reminders in Settings | — | — | — | — | leaves the app |
 
 A Photos write happens on FAVE (the flag), on ARCHIVE (album membership) and on permanent deletion;
 only deletion presents a system dialog. Under limited access, if PhotoKit refuses the album write,
 the archive list still records the verdict and the album catches up when access widens (ADR-010).
+
+The two reminder actions change no membership. "Remind me every 30 days" adds the one pending
+notification request, asking for permission first if iOS never has; after that it is replaced each
+time the queue runs out under review ([§5](#5-queue-lifecycle), ADR-034).
 
 ---
 
@@ -255,11 +282,15 @@ the archive list still records the verdict and the album catches up when access 
 | Acknowledged selection count | app-local store | — | no | access becomes authorized |
 | Rewind entry | memory | — | no | cold launch, cap, invalidation ([§5](#5-queue-lifecycle)) |
 | Authorization | the system | — | yes | the user, in Settings |
+| Reminder | iOS, as the pending notification request | `sift.reminder`, with the moment it was added | no: uninstalling removes it and the notification permission | nothing in the app; notifications turned off in Settings silence it without removing it |
 
 **What is deliberately not stored.** No "onboarding seen" flag: Permission appears whenever the
 authorization status makes it necessary and never otherwise. No per-screenshot "reviewed" flag:
 derived ([§1](#1-object-model)). No "waiting" flag and no schedule for when a screenshot comes due:
 derived from `creationDate` (ADR-032). No copy of the favorite flag. No session log, no statistics.
+No reminder flag and no reminder date: whether the reminder is on is notification authorization plus
+the pending request, and its next date is computed from that request; the app-local store gains
+nothing (ADR-034).
 
 **Recovery after reinstall.** The trash list is gone, and because nothing was deleted from Photos
 the trashed screenshots simply return to the queue (a recent one waits until it is 30 days old).
@@ -310,7 +341,9 @@ only when to present them and what to do with each outcome.
 | Photo-library access dialog | `PHPhotoLibrary.requestAuthorization(for: .readWrite)` on the Permission CTA, never on launch | authorized → Review · limited → interstitial · denied → denied state |
 | Limited-library picker | `presentLimitedLibraryPicker(from:)` on "Pick more" | on dismiss, the selection count is re-read and the interstitial updates |
 | Delete confirmation | `PHPhotoLibrary.performChanges` with `deleteAssets` — one dialog per call, so "all" is one batch | confirmed → cells removed, `purgeDone`; cancelled → "Not deleted" toast, nothing changes; partial failure → inline "Couldn't delete N. Try again." |
-| Settings | `UIApplication.openSettingsURLString` on "Open Settings" | re-routed on the next `scenePhase == .active` |
+| Settings | `UIApplication.openSettingsURLString` on "Open Settings"; `UIApplication.openNotificationSettingsURLString`, the app's notification settings, on "Turn on reminders in Settings" | re-routed on the next `scenePhase == .active`, when the `allDone` block also reads the reminder again |
+| Notification permission dialog | `UNUserNotificationCenter.requestAuthorization(options: [.alert, .sound])` on "Remind me every 30 days", never on launch, and only while iOS has never asked (ADR-034) | allowed → the reminder is scheduled, `DSHaptic.permissionGranted`, the block reads "Next reminder", VoiceOver hears the date · declined → "Turn on reminders in Settings", and VoiceOver hears it |
+| The reminder | one request, `sift.reminder`, with a repeating 30-day `UNTimeIntervalNotificationTrigger`: added on "Remind me every 30 days", replaced each time the queue runs out under review ([§5](#5-queue-lifecycle)). The one surface here whose words are the app's: its title and body are in `UI_DESIGN.md` §12 | delivered as a banner and to Notification Center, and not shown while the app is open · a tap opens the app, routed by [§4](#4-launch-routing) · off, on or denied, as in §5 |
 
 Favorite and album writes go through `performChanges` too but present nothing.
 
@@ -336,6 +369,7 @@ the Viewer only; the card is the screenshot at card size.
 
 ## 11. Out of scope for v1
 
-Search and text filters, a Settings screen, statistics and streaks, multi-select in Trash
+Search and text filters, a Settings screen (so the reminder is turned off in iOS Settings, ADR-034),
+statistics and streaks, multi-select in Trash
 (ADR-015), deep links, widgets and Shortcuts, an iPad layout, syncing the app-local lists through
 iCloud, reviewing photos that are not screenshots, and any AI assistance.

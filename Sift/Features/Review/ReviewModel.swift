@@ -1,7 +1,9 @@
 import Foundation
 import Observation
 
-/// The deck state machine of IA §5. The view animates; the model decides what the deck *is*.
+/// The deck state machine of IA §5. The view animates; the model decides what the deck *is*. It also
+/// holds what the all-done block says about the cleanup reminder, and re-anchors the reminder when
+/// the queue runs out under review (ADR-034).
 @MainActor
 @Observable
 final class ReviewModel {
@@ -24,14 +26,29 @@ final class ReviewModel {
     private(set) var lastVerdict: Verdict?
     private(set) var rewindCount = 0
     private(set) var queueDoneCount = 0
+    /// The cleanup reminder as the all-done block shows it (ADR-034); nil until it has been read.
+    private(set) var reminder: ReminderStatus?
+    /// Haptic trigger: "Remind me" ended with the reminder on.
+    private(set) var reminderOnCount = 0
 
     let catalog: Catalog
+    private let reminders: any ReminderScheduler
     private let sleep: @Sendable (Duration) async -> Void
     private var pinnedFrontID: String?
     private var flightTask: Task<Void, Never>?
+    /// The re-anchor started when the queue last ran out. A refresh waits for it, so it reads the new
+    /// date rather than the old one.
+    private var reanchorTask: Task<Void, Never>?
+    /// "Remind me" is waiting on iOS, whose permission prompt sends the app through inactive and back.
+    private var isEnablingReminder = false
+    /// Moves on each time "Remind me" starts, so a refresh whose read began earlier cannot put an older
+    /// answer over the one "Remind me" reports.
+    private var reminderGeneration = 0
 
-    init(catalog: Catalog, sleep: @escaping @Sendable (Duration) async -> Void = { try? await Task.sleep(for: $0) }) {
+    init(catalog: Catalog, reminders: any ReminderScheduler,
+         sleep: @escaping @Sendable (Duration) async -> Void = { try? await Task.sleep(for: $0) }) {
         self.catalog = catalog
+        self.reminders = reminders
         self.sleep = sleep
     }
 
@@ -78,8 +95,11 @@ final class ReviewModel {
             let next: Phase = catalog.total == 0 ? .noScreenshots : (queue.isEmpty ? .allDone : .reviewing)
             // The queue ran out under review. Not a launch that starts out done, and not a first
             // screenshot that arrives and waits, which takes `noScreenshots` to `allDone` with
-            // nothing reviewed.
-            if next == .allDone, phase == .reviewing { queueDoneCount += 1 }
+            // nothing reviewed. A finished sift is also what re-anchors the reminder (ADR-034).
+            if next == .allDone, phase == .reviewing {
+                queueDoneCount += 1
+                reanchorTask = Task { [reminders] in await reminders.reanchor() }
+            }
             phase = next
         }
     }
@@ -145,6 +165,41 @@ final class ReviewModel {
         phase = .reviewing
         sync()
         lastAnnouncement = "Rewound. \(position) of \(total)"
+    }
+
+    // MARK: - Reminder (ADR-034)
+
+    /// Reads the reminder from iOS: when the all-done block appears and on every return to the
+    /// foreground. Skipped while "Remind me" is waiting on iOS, which reports the status itself, and
+    /// dropped if "Remind me" started while the read was out.
+    func refreshReminder() async {
+        await reanchorTask?.value
+        guard !isEnablingReminder else { return }
+        let generation = reminderGeneration
+        let status = await reminders.status()
+        guard generation == reminderGeneration else { return }
+        reminder = status
+    }
+
+    /// "Remind me every 30 days": iOS asks for permission if it never has, then the reminder is
+    /// scheduled. This is the only place the app asks (ADR-010). VoiceOver hears the outcome, since
+    /// the action it was on goes away (P-22).
+    func enableReminder() async {
+        guard !isEnablingReminder else { return }
+        isEnablingReminder = true
+        reminderGeneration += 1
+        let status = await reminders.enable()
+        isEnablingReminder = false
+        reminder = status
+        switch status {
+        case .on(let next):
+            reminderOnCount += 1
+            lastAnnouncement = "Reminder on. Next reminder: \(EmptyState.arrivalDay(next))."
+        case .denied:
+            lastAnnouncement = "Notifications are off. Turn on reminders in Settings."
+        case .off:
+            break
+        }
     }
 
     /// Called when the catalog changes underneath the deck; safe in any phase.

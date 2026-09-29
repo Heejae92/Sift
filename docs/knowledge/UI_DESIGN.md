@@ -24,7 +24,7 @@
 > discount every hit the same command reports for `'Sift/'`, plus the one path join named above. The
 > lint does not check any of this; it checks `DesignSystem/` only.
 
-v1.6 · 2026-09-28 · light-only · iOS 17 SwiftUI
+v1.7 · 2026-09-29 · light-only · iOS 17 SwiftUI
 
 The product is a screenshot triage app. It shows one screenshot at a time as a card, newest
 unreviewed first, with a progress counter. Swipe left sends it to the app's own Trash, right to a
@@ -951,7 +951,7 @@ Impact **weight encodes direction**, so eyes-off swiping still confirms which ve
 | "Delete" tapped | `.purgeArmed` | `.warning` | Fired just before the iOS dialog is presented |
 | Permanent deletion finished | `.purgeDone` | `.success` | After `deleteAssets` reports success |
 | Queue finished | `.queueDone` | `.success` | When the last card leaves |
-| Photo access granted | `.permissionGranted` | `.success` | After the system dialog returns an authorized status |
+| Photo access or the reminder granted | `.permissionGranted` | `.success` | After the system dialog returns an authorized status; for the reminder, when "Remind me every 30 days" ends with it on (ADR-034) |
 | Segment switched | `.segment` | `.selection` | Favorites ↔ Archive |
 | Failure | `.error` | `.error` | A delete or a move failed |
 
@@ -971,6 +971,10 @@ one medium tap, which is what makes FAVE identifiable without looking.
 There is no sound in v1 (ADR-012). v1 has no settings screen, so a sound that cannot be turned off
 would be a defect rather than a feature. Haptics carry the game feel. If sound is added later it
 will be short custom samples on the `.ambient` category, opt-in.
+
+The one sound the app causes is iOS's own: the cleanup reminder is a notification with the default
+notification sound (ADR-034). The system plays it, and the app's page in iOS Settings turns it off, so
+the rule above, which is about sound inside the app, stands.
 
 ---
 
@@ -1288,7 +1292,8 @@ Each entry gives anatomy, the tokens it consumes, its states, and its accessibil
 - **Anatomy.** A full-bleed `DSBlock`: face in `DSTextRole.display`, headline in
   `DSTextRole.headline`, optional body in `DSTextRole.body`, optional CTA pill in `DSBlock.ctaFill`
   with a `DSBlock.ctaLabel` label, and at most one further action, which is bare text in the block's
-  `ink` rather than a second pill ([§10 Buttons](#buttons)).
+  `ink` rather than a second pill ([§10 Buttons](#buttons)). On `allDone` that further action belongs
+  to the cleanup reminder ([§11.2](#112-review), ADR-034).
 - **Tokens.** The block's `fill`, `ink`, `ctaFill`, `ctaLabel` and `focusRing` from `DSBlock`,
   `DSTextRole.display` / `headline` / `body` / `label`, `DSRadius.pill`, `DSSpace.s5`, `DSSpace.s7`.
 - **States.** Five, and no others: `noScreenshots` and `allDone` on Review, `trashEmpty` on Trash,
@@ -1466,12 +1471,32 @@ show and the all-done block is up.
 
 **All done.** `DSBlock.allDone` (lime, `delighted` face): headline
 `"Inbox zero, screenshot edition."`, then up to two body lines, each on its own:
-`"Trash is holding 27 — empty it whenever."` when Trash holds anything, and
-`"Next screenshot: Oct 12."` when a screenshot is waiting, dated by `Date.FormatStyle` (month
-abbreviated, day) in the user's locale. With neither, there is no body. CTA `"Open Trash (27)"`. A
-library whose screenshots are all still waiting shows this block too, not `noScreenshots`. A
-confetti burst plays for `DSMotion.confetti` when the queue runs out under review, gated on Reduce
-Motion. Rewind stays available.
+`"Trash is holding 27 — empty it whenever."` when Trash holds anything, and one date line. The date
+line is `"Next reminder: Nov 28."` while the cleanup reminder is on (ADR-034), and otherwise
+`"Next screenshot: Oct 12."` when a screenshot is waiting, both dated by `Date.FormatStyle` (month
+abbreviated, day) in the user's locale. With neither, there is no body. CTA `"Open Trash (27)"`, the
+block's one filled action, while Trash holds anything. A library whose screenshots are all still
+waiting shows this block too, not `noScreenshots`. A confetti burst plays for `DSMotion.confetti` when
+the queue runs out under review, gated on Reduce Motion. Rewind stays available.
+
+**The reminder on the all-done block** (ADR-034). Beside the CTA sits at most one bare-text action in
+the block's ink ([§10 Buttons](#buttons)), and it belongs to the reminder:
+
+| Reminder | Date line | Bare-text action | On tap |
+|---|---|---|---|
+| off: allowed, or never asked | `"Next screenshot: Oct 12."` when one waits | `"Remind me every 30 days"` | iOS asks for alerts and sound the first time only. Allowed: the reminder is on, `DSHaptic.permissionGranted` fires and VoiceOver hears `"Reminder on. Next reminder: Oct 29."`. Declined: denied, and VoiceOver hears `"Notifications are off. Turn on reminders in Settings."` |
+| on | `"Next reminder: Nov 28."` | none | — |
+| denied: declined, or allowed with alerts, the lock screen and Notification Center all off | `"Next screenshot: Oct 12."` when one waits | `"Turn on reminders in Settings"` | opens the app's notification settings (`UIApplication.openNotificationSettingsURLString`); the block reads the reminder again on return |
+| not read yet | as when off | none | — |
+
+With Trash empty the text action is the block's only action, and with the reminder on as well the
+block has none. The block reads the reminder when it appears and on every return to the foreground,
+and a change animates as a standard state change (a cross-fade under Reduce Motion). The action a
+VoiceOver user tapped goes away with the change, which is why the outcome is announced (P-22). The reminder
+fires 30 days after the queue last ran out under review, at that time of day, and every 30 days after
+that if ignored. The notification is `"Time to \(Brand.name.lowercased())"` over `"See which
+screenshots are over 30 days old. One swipe each."`, with the default sound and no badge; iOS draws it,
+and a tap on it opens the app.
 
 **No screenshots.** `"No screenshots. Honestly, impressive."`
 
@@ -1593,6 +1618,10 @@ Example strings, all from the screens above:
 | Card chip | `"Sep 21 · 2:14 PM · 1.2 MB"` |
 | All done | `"Inbox zero, screenshot edition."` · `"Trash is holding 27 — empty it whenever."` · `"Open Trash (27)"` |
 | All done, a screenshot waiting | `"Next screenshot: Oct 12."`, on its own line under the Trash line; the date is `Date.FormatStyle`, month abbreviated and day (ADR-032) |
+| All done, reminder off | bare-text action `"Remind me every 30 days"` (the number is `ReminderPolicy.intervalDays`) (ADR-034) |
+| All done, reminder declined | bare-text action `"Turn on reminders in Settings"` (ADR-034) |
+| All done, reminder on | `"Next reminder: Nov 28."`, in place of the "Next screenshot" line and dated the same way (ADR-034) |
+| Reminder notification | title `"Time to \(Brand.name.lowercased())"`, "Time to sift" (built from `Brand.name`; recheck on a rename) · body `"See which screenshots are over 30 days old. One swipe each."` (the number is `ReviewPolicy.minimumAgeDays`) (ADR-034) |
 | No screenshots | `"No screenshots. Honestly, impressive."` |
 | Trash header | `"Trash · 27 items · 48 MB"` |
 | Purge-all button | `"Delete all (27)"` (the size stays in the header) |
@@ -1602,6 +1631,7 @@ Example strings, all from the screens above:
 | Delete cancelled | `"Not deleted"` |
 | Library empty | `"No faves yet. Swipe up on the good ones."` · `"Nothing archived. Swipe right to stash keepers."` |
 | VoiceOver announcement | `"Trashed. 13 of 340"` · `"Rewound. 12 of 340"` |
+| VoiceOver, after "Remind me every 30 days" | `"Reminder on. Next reminder: Oct 29."`, dated as the all-done line · `"Notifications are off. Turn on reminders in Settings."` when declined (ADR-034) |
 | Footer link to Credits (Library) | `"Icons"` |
 | Legend row, done | value `"Done"` |
 | Denied, after "Not now" | `"Photos access for \(Brand.name) is set in Settings."` |
@@ -1956,7 +1986,7 @@ the expressive palette to serve as blocks, `onboarding` on `trash.main` and `lim
 
 9. **The onboarding face.** §9 assigns the `eager` face to `DSBlock.onboarding`, but §11.1 gives the top of the screen to `DemoStack` and has no slot for a face. The build shows no face there. Owner to confirm.
 10. **The demo's height.** §11.1 says "the top 55 %"; no layout-fraction token exists, so the built demo takes whatever height the copy leaves (about 58 % on an iPhone 17 at the default text size) and steps aside at accessibility sizes.
-11. **Implementer values awaiting the owner's eye.** `DSMotion.stagger` 0.02 s (ADR-028), the all-done burst as three verdict glyphs (ADR-029), `DSSize.viewerZoomMax` 4 (ADR-030), and the demo's card size (derived from the product card, about 179 × 375 pt).
+11. **Implementer values awaiting the owner's eye.** `DSMotion.stagger` 0.02 s (ADR-028), the all-done burst as three verdict glyphs (ADR-029), `DSSize.viewerZoomMax` 4 (ADR-030), the demo's card size (derived from the product card, about 179 × 375 pt), and the reminder's details: its re-anchoring on each finished sift, the all-done block as the one place that asks, and its seven strings in §12 (ADR-034).
 12. **Secondary button shape.** §10 gives `.secondary` `DSRadius.md` and `DSTextRole.labelSmall`; the guide draws it as a pill in `.label`. The app follows §10. One of the two must change.
 13. **Pill labels at accessibility sizes.** A `DSRadius.pill` button whose label wraps to three lines has its first and last lines clipped by the capsule's ends (seen on "Delete all (27)" at AX5). A cap on the radius once the label wraps is the likely fix.
 14. **Icons on buttons.** §8 lists glyphs for the viewer's actions, but `DSButton` has no icon slot; the viewer's actions are text only.
@@ -1974,3 +2004,4 @@ the expressive palette to serve as blocks, `onboarding` on `trash.main` and `lim
 | v1.4 | 2026-09-24 | Citation and reconciliation pass. Every cross-file line citation and every contrast-row number replaced by a token pair, a quoted `Use` string, a selector or a recorded command; the product-name tally recounted (`design-system.html` 10, not 8) and restated as a rule; §9 and §10 reconciled on one filled action per block, with the second action bare text in the block's ink and a fifth button kind for it; §5 restated for `.dsFocusRing`'s `color:` parameter and the measurement that covers a block; rung 2 of the destructive ladder corrected to the count alone; §14's `max-width` parenthesis corrected from four queries to eight properties; `ink2` 6.19 and `inkMuted` 4.77 folded in from the `DSColor` comments. |
 | v1.5 | 2026-09-28 | ADR-032 in §11.2 and §12: Review asks only about screenshots at least 30 days old, the counter counts those, and the all-done block adds "Next screenshot: Oct 12." on its own line. §15 items 9 to 14, which had landed below this table, moved back into §15. The app-phase edits of 2026-09-27 (ADR-028 to ADR-031) are recorded in those ADRs and have no row here. |
 | v1.6 | 2026-09-28 | ADR-033 in §11.1 and §12: when some picked screenshots are unreviewed and under 30 days old, the limited-access block adds one line saying they wait and how many are ready now, or the day the first one is ("It's ready" when only one waits); the CTA counts the ready ones, or reads "Continue" when none is ready. When nothing picked is a screenshot, the block says so, "Pick more" takes the fill and "Continue" is the text action. §12 records the two "Continue" labels as the exception to "Verbs first". §11.1's footer row to Credits, stale since ADR-031, is replaced by a note that there is none. |
+| v1.7 | 2026-09-29 | ADR-034 in §7, §10, §11.2, §12 and §15: the all-done block carries the cleanup reminder. Its bare-text action reads "Remind me every 30 days" while the reminder is off and "Turn on reminders in Settings" once it is denied, which opens the app's notification settings; denied covers notifications declined and notifications allowed with alerts, the lock screen and Notification Center all off. There is no reminder action while it is on, and "Open Trash (N)" stays the one filled action. While the reminder is on, "Next reminder: Nov 28." takes the place of the "Next screenshot" line. VoiceOver hears the outcome of "Remind me". §12 adds the notification's title and body and the two announcements; §7 records `DSHaptic.permissionGranted` for the reminder and that the notification's sound is iOS's, which leaves ADR-012 standing; §15 item 11 lists the reminder's details as awaiting the owner. |

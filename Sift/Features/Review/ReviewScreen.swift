@@ -10,17 +10,23 @@ import SwiftUI
 /// - `allDone` and `noScreenshots` are `EmptyState` blocks. They run full-bleed under the header and
 ///   the dock, which take the block's ink. Rewind stays available in `allDone`, and reaching it plays
 ///   the `DSMotion.confetti` burst unless Reduce Motion is on.
+/// - The all-done block carries the cleanup reminder (ADR-034): its bare-text action and, while it is
+///   on, its date. The reminder is read from iOS when the block appears and on every return to the
+///   foreground, which is how a change made in Settings shows up.
 struct ReviewScreen: View {
     @Environment(Catalog.self) private var catalog
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     @Binding var path: [Route]
+    /// Built by `SiftApp`, like the photo library, and handed to the model.
+    let reminders: any ReminderScheduler
     @State private var model: ReviewModel?
     @State private var motion = DeckMotion()
 
     var body: some View {
         ZStack {
             if let emptyState {
-                EmptyState(emptyState) { path.append(.trash) }
+                EmptyState(emptyState, primaryAction: { path.append(.trash) }, reminderAction: { perform($0) })
                     .transition(.opacity)
             }
             if let burst {
@@ -35,6 +41,7 @@ struct ReviewScreen: View {
             }
         }
         .animation(stateChange, value: block)
+        .animation(stateChange, value: model?.reminder)
         .safeAreaInset(edge: .top, spacing: .zero) {
             ReviewHeader(counter: counter, trashCount: catalog.trashed.count, block: block,
                          openTrash: { path.append(.trash) }, openLibrary: { path.append(.library) })
@@ -46,10 +53,19 @@ struct ReviewScreen: View {
         .dsHaptic(.rewind, trigger: model?.rewindCount ?? 0)
         .dsHaptic(.queueDone, trigger: model?.queueDoneCount ?? 0)
         .dsHaptic(.thresholdArmed, trigger: motion.armedCount)
+        .dsHaptic(.permissionGranted, trigger: model?.reminderOnCount ?? 0)
         .task(id: catalog.isLoaded) {
             guard catalog.isLoaded else { return }
-            if model == nil { model = ReviewModel(catalog: catalog) }
+            if model == nil { model = ReviewModel(catalog: catalog, reminders: reminders) }
             model?.sync()
+        }
+        .task(id: isAllDone) {
+            guard isAllDone else { return }
+            await model?.refreshReminder()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active, isAllDone else { return }
+            Task { await model?.refreshReminder() }
         }
         .onChange(of: catalog.screenshots) { _, _ in model?.catalogDidChange() }
         .onChange(of: catalog.state) { _, _ in model?.catalogDidChange() }
@@ -114,9 +130,22 @@ struct ReviewScreen: View {
     /// screenshot is reviewed or still waiting) or `noScreenshots`.
     private var emptyState: EmptyState.Kind? {
         switch model?.phase {
-        case .some(.allDone): return .allDone(trashCount: catalog.trashed.count, nextArrival: catalog.nextArrival)
+        case .some(.allDone):
+            return .allDone(trashCount: catalog.trashed.count, nextArrival: catalog.nextArrival, reminder: model?.reminder)
         case .some(.noScreenshots): return .noScreenshots
         default: return nil
+        }
+    }
+
+    private var isAllDone: Bool { model?.phase == .allDone }
+
+    /// The all-done block's bare-text action (ADR-034). "Remind me" is the one place the app asks for
+    /// notifications (ADR-010); a declined answer leads to the app's notification settings, and the
+    /// return re-reads it.
+    private func perform(_ action: EmptyState.ReminderAction) {
+        switch action {
+        case .remindMe: Task { await model?.enableReminder() }
+        case .openSettings: SystemUI.openNotificationSettings()
         }
     }
 

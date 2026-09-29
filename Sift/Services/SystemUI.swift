@@ -2,12 +2,20 @@ import Photos
 import PhotosUI
 import UIKit
 
-/// The two places the system forces UIKit on us (ARCHITECTURE §4).
+/// Where the system forces UIKit on us (ARCHITECTURE §4): opening the app's page in Settings, or its
+/// notification settings, and presenting the limited-library picker.
 @MainActor
 enum SystemUI {
     /// "Open Settings" on the denied state (IA §9).
     static func openSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    /// "Turn on reminders in Settings" on the all-done block: the app's notification settings (IA §9,
+    /// ADR-034). The block reads the reminder again on the return to the foreground.
+    static func openNotificationSettings() {
+        guard let url = URL(string: UIApplication.openNotificationSettingsURLString) else { return }
         UIApplication.shared.open(url)
     }
 

@@ -4,13 +4,14 @@ import Testing
 
 @MainActor
 struct ReviewModelTests {
-    private func make(shots: [Screenshot], now: @escaping @Sendable () -> Date = { Date() }) async
+    private func make(shots: [Screenshot], now: @escaping @Sendable () -> Date = { Date() },
+                      reminders: FakeReminderScheduler = FakeReminderScheduler()) async
         -> (ReviewModel, Catalog, FakePhotoLibrary) {
         let library = FakePhotoLibrary(shots: shots)
         let catalog = Catalog(library: library, persistence: InMemoryPersistence(), now: now,
                               minimumAge: Fixtures.minimumAge)
         await catalog.load()
-        let model = ReviewModel(catalog: catalog, sleep: { _ in })
+        let model = ReviewModel(catalog: catalog, reminders: reminders, sleep: { _ in })
         model.sync()
         return (model, catalog, library)
     }
@@ -188,5 +189,132 @@ struct ReviewModelTests {
         await model.commit(.trash, exitDuration: 0)
         #expect(model.deck.map(\.id) == ["r1", "s2", "s3"])
         #expect(model.lastAnnouncement == "Trashed. 2 of 4")
+    }
+
+    // MARK: - ADR-034: the cleanup reminder
+
+    /// Where `FakeReminderScheduler`'s clock starts.
+    private static let start = Date(timeIntervalSince1970: Fixtures.clockStart)
+    private static let interval = FakeReminderScheduler.interval
+
+    /// "Remind me" from an undetermined state shows the one prompt. Allowed, the reminder is on a full
+    /// interval from now, the success haptic's trigger moves once, and VoiceOver hears the date (P-22).
+    /// Reading it never asks (ADR-010).
+    @Test func remindMeAsksOnceAndTurnsTheReminderOn() async {
+        let reminders = FakeReminderScheduler()
+        let (model, _, _) = await make(shots: Fixtures.shots(1, favorite: ["s1"]), reminders: reminders)
+        await model.refreshReminder()
+        #expect(model.phase == .allDone && model.reminder == .off)
+        #expect(await reminders.promptCount == 0)
+
+        await model.enableReminder()
+        let next = Self.start.addingTimeInterval(Self.interval)
+        #expect(await reminders.promptCount == 1)
+        #expect(model.reminder == .on(next: next))
+        #expect(model.reminderOnCount == 1)
+        #expect(model.lastAnnouncement == "Reminder on. Next reminder: \(EmptyState.arrivalDay(next)).")
+    }
+
+    /// Declined, the reminder is denied, nothing celebrates, and VoiceOver hears where to fix it. A
+    /// second tap asks nothing: iOS shows the prompt once.
+    @Test func decliningThePromptLeavesTheReminderDenied() async {
+        let reminders = FakeReminderScheduler(allowsWhenAsked: false)
+        let (model, _, _) = await make(shots: Fixtures.shots(1, favorite: ["s1"]), reminders: reminders)
+        await model.enableReminder()
+        #expect(model.reminder == .denied)
+        #expect(model.reminderOnCount == 0)
+        #expect(model.lastAnnouncement == "Notifications are off. Turn on reminders in Settings.")
+        await model.enableReminder()
+        #expect(await reminders.promptCount == 1)
+        #expect(model.reminder == .denied)
+    }
+
+    /// While the prompt holds "Remind me", the app goes inactive and back and refreshes. That refresh
+    /// must leave the block alone; the answer comes from "Remind me" once the prompt is answered.
+    @Test func aRefreshWhileRemindMeWaitsLeavesTheAnswerToIt() async {
+        let reminders = FakeReminderScheduler()
+        let (model, _, _) = await make(shots: Fixtures.shots(1, favorite: ["s1"]), reminders: reminders)
+        await reminders.hold(.enable)
+        let enabling = Task { await model.enableReminder() }
+        await waitUntil { await reminders.isWaiting(.enable) }
+        await model.refreshReminder()
+        #expect(model.reminder == nil)
+        await reminders.release(.enable)
+        await enabling.value
+        #expect(model.reminder == .on(next: Self.start.addingTimeInterval(Self.interval)))
+    }
+
+    /// A refresh that read "off" just before "Remind me" and answers after it must not undo it.
+    @Test func aRefreshThatReadBeforeRemindMeCannotUndoIt() async {
+        let reminders = FakeReminderScheduler()
+        let (model, _, _) = await make(shots: Fixtures.shots(1, favorite: ["s1"]), reminders: reminders)
+        await reminders.hold(.status)
+        let refreshing = Task { await model.refreshReminder() }
+        await waitUntil { await reminders.isWaiting(.status) }
+        await model.enableReminder()
+        let on = ReminderStatus.on(next: Self.start.addingTimeInterval(Self.interval))
+        #expect(model.reminder == on)
+        await reminders.release(.status)
+        await refreshing.value
+        #expect(model.reminder == on)
+    }
+
+    /// Yields until `condition` holds, so a test can wait for a fake's call to reach its gate.
+    private func waitUntil(_ condition: () async -> Bool) async {
+        for _ in 0..<10_000 {
+            if await condition() { return }
+            await Task.yield()
+        }
+        Issue.record("the condition never held")
+    }
+
+    /// The reminder moves to a full interval from the verdict that empties the queue: not on a partial
+    /// session, and again every time the queue runs out.
+    @Test func aVerdictThatEmptiesTheQueueReanchorsTheReminder() async {
+        let reminders = FakeReminderScheduler(authorization: .authorized, anchor: Self.start)
+        let (model, _, _) = await make(shots: Fixtures.shots(2), reminders: reminders)
+        await reminders.advance(by: 5 * Fixtures.day)
+
+        await model.commit(.trash, exitDuration: 0)          // one card left: a partial session
+        await model.refreshReminder()
+        #expect(await reminders.reanchorCalls == 0)
+        #expect(model.reminder == .on(next: Self.start.addingTimeInterval(Self.interval)))
+
+        await model.commit(.archive, exitDuration: 0)        // the queue is empty
+        await model.refreshReminder()
+        #expect(model.phase == .allDone)
+        #expect(await reminders.reanchorCalls == 1)
+        let sifted = Self.start.addingTimeInterval(5 * Fixtures.day)
+        #expect(model.reminder == .on(next: sifted.addingTimeInterval(Self.interval)))
+
+        await model.rewind(landDuration: 0)                  // under review again, then done again
+        await model.commit(.archive, exitDuration: 0)
+        await model.refreshReminder()
+        #expect(await reminders.reanchorCalls == 2)
+    }
+
+    /// A launch that opens on the all-done block finished nothing, so the reminder stays put.
+    @Test func launchingIntoAllDoneDoesNotReanchor() async {
+        let reminders = FakeReminderScheduler(authorization: .authorized, anchor: Self.start)
+        let (model, _, _) = await make(shots: Fixtures.shots(1, favorite: ["s1"]), reminders: reminders)
+        await model.refreshReminder()
+        #expect(model.phase == .allDone)
+        #expect(await reminders.reanchorCalls == 0)
+        #expect(model.reminder == .on(next: Self.start.addingTimeInterval(Self.interval)))
+    }
+
+    /// Finishing the queue while the reminder is off or declined schedules nothing and asks nothing.
+    @Test func finishingTheQueueWhileTheReminderIsOffSchedulesNothing() async {
+        for authorization in [FakeReminderScheduler.Authorization.notDetermined, .denied] {
+            let reminders = FakeReminderScheduler(authorization: authorization)
+            let (model, _, _) = await make(shots: Fixtures.shots(1), reminders: reminders)
+            await model.commit(.trash, exitDuration: 0)
+            await model.refreshReminder()
+            #expect(model.phase == .allDone)
+            #expect(await reminders.reanchorCalls == 1)
+            #expect(await reminders.anchor == nil)
+            #expect(await reminders.promptCount == 0)
+            #expect(model.reminder == (authorization == .denied ? .denied : .off))
+        }
     }
 }

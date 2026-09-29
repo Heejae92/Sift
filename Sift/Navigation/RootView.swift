@@ -4,6 +4,8 @@ import SwiftUI
 struct RootView: View {
     @Environment(Catalog.self) private var catalog
     @Environment(\.scenePhase) private var scenePhase
+    /// The cleanup reminder (ADR-034), passed on to Review, the one screen that uses it.
+    let reminders: any ReminderScheduler
     @State private var path: [Route] = []
 
     private var showsDeniedBlock: Bool {
@@ -20,7 +22,7 @@ struct RootView: View {
                 LimitedInterstitial()
             } else {
                 NavigationStack(path: $path) {
-                    ReviewScreen(path: $path)
+                    ReviewScreen(path: $path, reminders: reminders)
                         .navigationDestination(for: Route.self) { route in
                             switch route {
                             case .trash: TrashScreen()

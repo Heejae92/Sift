@@ -53,7 +53,7 @@
 | 009 | Permanent deletion always goes through the iOS dialog; "delete all" gets an in-app sheet first | 2026-09-22 | Active · corrected 2026-09-24 |
 | 010 | Limited photo access is a first-class state | 2026-09-22 | Active |
 | 011 | Navigation by header icon buttons, no tab bar | 2026-09-22 | Active |
-| 012 | No sound in v1 | 2026-09-22 | Active |
+| 012 | No sound in v1 | 2026-09-22 | Active · corrected 2026-09-29 |
 | 013 | Stamps read TRASH / ARCHIVE / FAVE and are pills | 2026-09-23 | Active |
 | 014 | The archive album is named "<Brand> Archive" | 2026-09-22 | Active |
 | 015 | Trash has no multi-select | 2026-09-22 | Active |
@@ -73,8 +73,9 @@
 | 029 | The all-done burst is the three verdict glyphs in the block's ink | 2026-09-27 | Active · owner has not seen it |
 | 030 | Viewer tokens: `viewerBackdrop`, a double-tap scale and a pinch ceiling | 2026-09-27 | Active · ceiling is an assumption |
 | 031 | First look at the running app: centred blocks with a half-screen face, short labels, no Credits link on Permission, real sample screenshots | 2026-09-27 | Active |
-| 032 | Review asks only about screenshots at least 30 days old; newer ones wait and join by themselves | 2026-09-28 | Active · corrected 2026-09-28 |
+| 032 | Review asks only about screenshots at least 30 days old; newer ones wait and join by themselves | 2026-09-28 | Active · corrected 2026-09-29 |
 | 033 | Follow-ups to the 30-day rule: backdated samples for the simulator, and the limited-access screen explains the wait | 2026-09-28 | Active |
+| 034 | A cleanup reminder every 30 days, re-anchored on each finished sift and turned on from the all-done block | 2026-09-29 | Active · owner has not seen the details |
 | S-1 | Dark-first adaptive tokens | 2026-09-22 | Superseded by 006 |
 | S-2 | SF Pro Rounded system font | 2026-09-22 | Superseded by 003 |
 | S-3 | SF Symbols as the icon set | 2026-09-22 | Superseded by 017 |
@@ -645,6 +646,8 @@ imply three equal destinations; the card is the product.
 
 **Decision.** v1 has no settings screen, so a sound that cannot be turned off would be a defect.
 Haptics carry the game feel. If added later: short custom samples, `.ambient` category, opt-in.
+
+**Correction, 2026-09-29.** "No sound in v1" means no sound in the app: the cleanup reminder of ADR-034 plays iOS's default notification sound, which the system plays and its Settings switch off, and that does not break this rule.
 
 ## ADR-013 · Stamps read TRASH / ARCHIVE / FAVE and are pills
 
@@ -1464,6 +1467,13 @@ adds the six samples again with August 2026 dates, which are due, so Review ther
 screenshots as well; the recent `addmedia` copies still wait until Oct 27 and keep the all-done
 block's date line.
 
+**Correction, 2026-09-29 (the reminder).** The Consequences say "Nothing announces a screenshot
+coming due — there is no background work and no notification". Since ADR-034 there is one
+notification, a cleanup reminder every 30 days that the user turns on from the all-done block. It
+still announces no particular screenshot, and there is still no background work: the reminder is
+handed to iOS when it is turned on and moved when a sift is finished, and a screenshot that comes due
+still appears at the next refresh.
+
 **Applies to** `Sift/Data/ReviewPolicy.swift`, `Sift/Data/Catalog.swift`,
 `Sift/Features/Review/ReviewModel.swift`, `ReviewScreen`, `EmptyState`,
 `Sift/Services/PhotoKitLibrary.swift`, `project.yml`, `SiftTests/`, `IA.md` §1, §4, §5, §7, §8,
@@ -1547,6 +1557,101 @@ because this machine's simulator has full access and was left that way.
 `SiftTests/LimitedInterstitialTests.swift`, `README.md` "Running on the simulator",
 `ARCHITECTURE.md` §9, `UI_DESIGN.md` §11.1, §12, `IA.md` §4, §6, ADR-010, ADR-025 (A2), ADR-027,
 ADR-032; P-12, P-19.
+
+---
+
+## ADR-034 · A cleanup reminder every 30 days, re-anchored on each finished sift and turned on from the all-done block
+
+**Context.** The course asks each project to name its category, and the owner chose **Ritual**,
+which the course's category list defines as "Something used at the same moment every day or week, so
+it has to be quick and pleasant to come back to". On 2026-09-29 the owner asked for two things: "알림
+기능도 넣어줘" (add a notification feature too) and "30일 마다 스크린샷 정리 시간 알림이 있다고 깃허브 설명에도
+추가해줘" (add to the GitHub description that there is a reminder every 30 days that it is time to
+clean up screenshots). Nothing in the app brought a user back: ADR-032 recorded that there is no
+background work and no notification. A ritual needs a cue, and the cue iOS lets an app give without a
+server is a local notification, which needs the user's permission. The owner fixed the feature and its
+30 days. How the reminder is anchored and where the app asks were fixed in the implementation session,
+from the options below, and have not been shown to the owner.
+
+**Options.** For the timing: (a) a fixed weekly reminder, which "every day or week" suggests, but the
+review rule is 30 days, so most weeks it would point at a queue with nothing new in it, and the owner
+said 30 days; (b) a calendar date each month, such as the 1st at 10:00 (`UNCalendarNotificationTrigger`),
+predictable but blind to when the user last sifted, so a sift on the 28th is followed by a reminder
+three days later; (c) one repeating 30-day interval, re-anchored every time a sift is finished; (d) a
+year of pre-scheduled one-shot notifications 30 days apart, which could vary their wording but leaves
+twelve requests to rewrite on every sift, stops after a year, and spends twelve of the 64 pending
+requests iOS keeps for an app. For the permission prompt: (e) at launch, which ADR-010 rules out for
+Photos and the same reasoning rules out here; (f) in onboarding, beside the photo-access CTA: two system
+prompts in a row before the user has sifted anything; (g) from the all-done block, the moment the user
+has just finished and "again in 30 days" means something.
+
+**Decision.** (c) and (g). The reminder is one local notification request, identifier `sift.reminder`,
+with a repeating `UNTimeIntervalNotificationTrigger` of `ReminderPolicy.interval`, 30 × 86 400 s. It
+is added when the user taps "Remind me every 30 days", and added again, replacing the pending one,
+every time the queue runs out under review while the reminder is on: the moment
+`ReviewModel.queueDoneCount` increments, which is a verdict in practice. A partial session moves
+nothing, and neither does a launch that opens on the all-done block. So it fires 30 days after the last
+finished sift, at the time of day the user sifted, and again every 30 days if ignored.
+
+The app stores nothing for it, and `StoreState` keeps ADR-025's list. On is notification authorization
+plus a pending request with that identifier. The next date is computed from the moment the request was
+added, which the request carries in its `userInfo`, and its trigger's interval
+(`ReminderPolicy.nextDate`). The brief took the date from the trigger's `nextTriggerDate()`, but
+measured on the simulator that method answers "now + interval" at every reading: a 3600 s trigger read
+3600.04 s ahead and, six seconds later, 3606.11 s after it was added, and the pending 60 s reminder moved
+6.14 s in six seconds. The block would have named a day 30 days from whenever it was opened.
+
+The only place the app asks is the all-done block's bare-text action, and iOS asks for alerts and sound
+only while it has never asked. The block keeps its one filled action (ADR-023), "Open Trash (N)" while
+Trash holds anything. Beside it, while the reminder is off, "Remind me every 30 days". Allowed, the
+reminder is scheduled, `DSHaptic.permissionGranted` fires, the reminder action goes, the date line
+reads "Next reminder: Nov 28." instead of "Next screenshot: …", and VoiceOver hears "Reminder on. Next
+reminder: Oct 29.", since the action it was on is gone (P-22). Declined, the action becomes "Turn on
+reminders in Settings", which opens the app's notification settings, and VoiceOver hears
+"Notifications are off. Turn on reminders in Settings.". The reminder also counts as denied when
+notifications are allowed but alerts, the lock screen and Notification Center are all switched off,
+because nothing would show and Settings is the remedy; a finished sift then leaves the request alone.
+The block reads the reminder when it appears and on every return to the foreground, and a read that was
+already out when "Remind me" started is dropped. The notification says "Time to
+\(Brand.name.lowercased())" over "See which screenshots are over 30 days old. One swipe each.", with the
+default sound and no badge. The title is built from `Brand` because the product name is its verb, as in
+"Keep sifting", though the brief listed no product name in it; the day count is
+`ReviewPolicy.minimumAgeDays`. The app sets no notification delegate, so a reminder that fires while the
+app is open is not shown, and a tap on one opens the app, which `IA.md` §4 routes as usual. So that the
+arrival can be watched, a DEBUG simulator build reads `-SiftReminderSeconds <n>`, 60 or more, because
+iOS refuses a shorter repeating interval, behind the gate of ADR-027 and ADR-032.
+
+**Consequences.** The reminder comes at the user's own time of day, not the app's. The interval is 30 ×
+86 400 s rather than a calendar month, so across a daylight-saving change it arrives an hour earlier or
+later on the clock. Ignored, it repeats every 30 days, each delivery replacing the last in Notification
+Center. It can fire when nothing is due, when every screenshot of the past month is still under 30 days
+old or the user cleared them some other way, and the app cannot know without background work, which it
+does not do; that is why the body invites a look instead of naming a count. It can be turned off only in
+iOS Settings, since v1 has no settings screen (`IA.md` §11): off there, the block offers "Turn on
+reminders in Settings", and on again, the request, never removed, is back with its date. A queue that
+runs out under review by something other than a swipe, such as the last card hearted in Photos, counts
+as finished, as it already does for the burst and `DSHaptic.queueDone`, so it re-anchors too.
+`DSHaptic.permissionGranted` now marks either grant, Photos or notifications. The sound is iOS's
+notification sound, played by the system and switched off in its Settings, so ADR-012's rule against
+sound inside the app stands.
+
+None of this is verifiable end to end on a device yet. On the simulator (iPhone 17, iOS 26.5) on
+2026-09-29, launched with `-SiftReminderSeconds 60` alone, the block offered "Remind me every 30 days",
+the iOS prompt appeared, Allow turned the date line into "Next reminder: Sep 29.", and the reminder
+arrived about 60 s after the tap, as a banner on the home screen and in Notification Center. Relaunched
+without the argument, restoring one screenshot from Trash and trashing it again re-anchored the request,
+which then read back from iOS as 2 592 000 s, repeating, with the title, the body and the sound, and the
+block said "Next reminder: Oct 29.". Not exercised: a real 30-day wait, a device, a tap on a delivered
+reminder, and the declined path on real iOS, whose answer the simulator resets only when the app is
+uninstalled, which would also clear its store.
+
+**Applies to** `Sift/Data/ReminderPolicy.swift`, `Sift/Services/ReminderScheduler.swift`,
+`Sift/Features/Review/ReviewModel.swift`, `ReviewScreen`, `EmptyState`, `RootView`, `SiftApp`,
+`Sift/Services/SystemUI.swift` (`openNotificationSettings`), `SiftTests/FakeReminderScheduler.swift`,
+`SiftTests/ReminderPolicyTests.swift`, `SiftTests/ReminderStatusTests.swift`, `ReviewModelTests`,
+`ReviewPresentationTests`, `README.md`, `docs/DEVELOPMENT.md`, `docs/screenshots/3-all-done.png`,
+`IA.md` §0 to §7, §9, §11, `ia.html`, `UI_DESIGN.md` §7, §10, §11.2, §12, §15, `ARCHITECTURE.md` §0 to
+§2, §4 to §10, ADR-010, ADR-012, ADR-023, ADR-025, ADR-032; P-11, P-12, P-19.
 
 ---
 

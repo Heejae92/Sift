@@ -652,7 +652,8 @@ pre.tree { background: var(--color-surface-raised); border-radius: var(--radius-
           <span>ADR-025</span>
           <span>ADR-032</span>
           <span>ADR-033</span>
-          <span>v1.2</span>
+          <span>ADR-034</span>
+          <span>v1.3</span>
         </div>
       </div>
     </header>
@@ -698,8 +699,8 @@ pre.tree { background: var(--color-surface-raised); border-radius: var(--radius-
       <section class="section" id="screens">
         <span class="section__num num">02</span>
         <h2>Screen inventory</h2>
-        <p class="section__lead">Four primary screens, three subordinate surfaces, four system surfaces. Nothing else exists in v1. Regions, components and strings for each are in UI_DESIGN section 11.</p>
-<div class="dg-wrap"><svg class="dg" viewBox="0 0 960 740" role="img" aria-label="Screen map: four screens, three subordinate surfaces, four system surfaces"><rect class="tile-gate" x="40" y="40" width="210" height="80" rx="14"/>
+        <p class="section__lead">Four primary screens, three subordinate surfaces, six system surfaces. Nothing else exists in v1. Regions, components and strings for each are in UI_DESIGN section 11.</p>
+<div class="dg-wrap"><svg class="dg" viewBox="0 0 960 740" role="img" aria-label="Screen map: four screens, three subordinate surfaces, six system surfaces"><rect class="tile-gate" x="40" y="40" width="210" height="80" rx="14"/>
 <text x="145.0" y="77.0" text-anchor="middle">Permission</text>
 <text class="sub" x="145.0" y="95.0" text-anchor="middle">gate · onboarding · limited · denied</text>
 <rect class="tile-sys" x="560" y="30" width="200" height="52" rx="14"/>
@@ -717,6 +718,13 @@ pre.tree { background: var(--color-surface-raised); border-radius: var(--radius-
 <text class="on-ink-sub" x="480.0" y="315.0" text-anchor="middle">root · the deck · counter</text>
 <line class="edge" x1="150" y1="120" x2="400" y2="262"/><rect class="pill" x="289.9" y="207" width="60.1" height="18" rx="9"/><text class="pill-text" x="320" y="220" text-anchor="middle">granted</text>
 <line class="edge edge-dash" x1="380" y1="300" x2="110" y2="120"/><rect class="pill" x="169.9" y="171" width="60.1" height="18" rx="9"/><text class="pill-text" x="200" y="184" text-anchor="middle">revoked</text>
+<rect class="tile-sys" x="720" y="246" width="215" height="44" rx="14"/>
+<text x="827.5" y="273.0" text-anchor="middle">iOS notification dialog</text>
+<rect class="tile-sys" x="720" y="298" width="215" height="56" rx="14"/>
+<text x="827.5" y="323.0" text-anchor="middle">The reminder</text>
+<text class="sub" x="827.5" y="340.0" text-anchor="middle">every 30 days · a tap opens the app</text>
+<line class="edge" x1="580" y1="287" x2="720" y2="268"/><rect class="pill" x="613.7" y="268" width="72.7" height="18" rx="9"/><text class="pill-text" x="650" y="281" text-anchor="middle">Remind me</text>
+<line class="edge" x1="440" y1="260" x2="560" y2="197"/><rect class="pill" x="414.4" y="232" width="123.1" height="18" rx="9"/><text class="pill-text" x="476" y="245" text-anchor="middle">Turn on reminders</text>
 <rect class="tile" x="100" y="430" width="200" height="80" rx="14"/>
 <text x="200.0" y="467.0" text-anchor="middle">Trash</text>
 <text class="sub" x="200.0" y="485.0" text-anchor="middle">pushed · the holding pen</text>
@@ -745,7 +753,7 @@ pre.tree { background: var(--color-surface-raised); border-radius: var(--radius-
 <rect class="pill" x="381.8" y="651" width="66.4" height="18" rx="9"/><text class="pill-text" x="415" y="664" text-anchor="middle">Delete N</text>
 <path class="edge" d="M115,644 Q 320,736 525,644"/><rect class="pill" x="239.6" y="705" width="160.9" height="18" rx="9"/><text class="pill-text" x="320" y="718" text-anchor="middle">Delete permanently, one</text>
 <line class="edge" x1="720" y1="510" x2="715" y2="580"/><rect class="pill" x="656.8" y="536" width="66.4" height="18" rx="9"/><text class="pill-text" x="690" y="549" text-anchor="middle">tap cell</text>
-<line class="edge" x1="830" y1="510" x2="870" y2="580"/><rect class="pill" x="857.4" y="536" width="85.3" height="18" rx="9"/><text class="pill-text" x="900" y="549" text-anchor="middle">footer link</text></svg></div><div class="legend"><span><i style="background:var(--color-fave-soft)"></i>gate</span><span><i style="background:var(--color-ink)"></i>root</span><span><i style="background:var(--color-surface-raised)"></i>pushed</span><span><i style="background:#000"></i>full-screen cover</span><span><i style="background:var(--color-archive-soft)"></i>sheet</span><span><i class="sys"></i>system or external, not ours to design</span></div><p class="subhead">The eleven surfaces</p><div class="tbl-scroll"><table class="tbl"><thead><tr><th>#</th><th>Surface</th><th>Kind</th><th>Reached from</th><th>Leaves to</th><th>Blocks · empty</th></tr></thead><tbody>
+<line class="edge" x1="830" y1="510" x2="870" y2="580"/><rect class="pill" x="857.4" y="536" width="85.3" height="18" rx="9"/><text class="pill-text" x="900" y="549" text-anchor="middle">footer link</text></svg></div><div class="legend"><span><i style="background:var(--color-fave-soft)"></i>gate</span><span><i style="background:var(--color-ink)"></i>root</span><span><i style="background:var(--color-surface-raised)"></i>pushed</span><span><i style="background:#000"></i>full-screen cover</span><span><i style="background:var(--color-archive-soft)"></i>sheet</span><span><i class="sys"></i>system or external, not ours to design</span></div><p class="subhead">The thirteen surfaces</p><div class="tbl-scroll"><table class="tbl"><thead><tr><th>#</th><th>Surface</th><th>Kind</th><th>Reached from</th><th>Leaves to</th><th>Blocks · empty</th></tr></thead><tbody>
 <tr><td>P</td><td><strong>Permission</strong></td><td>gate · replaces the root while access is unusable</td><td>launch when status is not usable; Review when authorization is revoked</td><td>Review, on grant</td><td><code>onboarding</code> · <code>denied</code> · <code>limited</code> interstitial</td></tr>
 <tr><td>R</td><td><strong>Review</strong></td><td>root of the stack</td><td>Permission on grant; launch when access is usable</td><td>Trash and Library, by push</td><td><code>allDone</code> · <code>noScreenshots</code></td></tr>
 <tr><td>T</td><td><strong>Trash</strong></td><td>pushed</td><td>Review header icon; the allDone CTA</td><td>back · Viewer · Purge-all sheet</td><td><code>trashEmpty</code></td></tr>
@@ -756,7 +764,9 @@ pre.tree { background: var(--color-surface-raised); border-radius: var(--radius-
 <tr><td>X1</td><td>iOS photo-library dialog</td><td>system</td><td>Permission CTA</td><td>Review · limited interstitial · denied</td><td>—</td></tr>
 <tr><td>X2</td><td>Limited-library picker</td><td>system</td><td>Pick more</td><td>the interstitial, with the new count</td><td>—</td></tr>
 <tr><td>X3</td><td>iOS delete dialog</td><td>system</td><td>Viewer · Delete permanently; the Purge-all sheet</td><td>Trash, cells removed, or the “Not deleted” toast</td><td>—</td></tr>
-<tr><td>X4</td><td>Settings app</td><td>external</td><td>Open Settings</td><td>re-routed on the next scenePhase active</td><td>—</td></tr>
+<tr><td>X4</td><td>Settings app</td><td>external</td><td>Open Settings; Turn on reminders in Settings on the allDone block</td><td>re-routed on the next scenePhase active</td><td>—</td></tr>
+<tr><td>X5</td><td>iOS notification dialog</td><td>system</td><td>Remind me every 30 days on the allDone block, the first time only</td><td>the allDone block, with the reminder on or declined</td><td>—</td></tr>
+<tr><td>X6</td><td>The reminder</td><td>system notification: a banner, then Notification Center</td><td>iOS, 30 days after the queue last ran out under review</td><td>a tap opens the app, routed as at launch</td><td>—</td></tr>
 </tbody></table></div>
       </section>
 
@@ -827,9 +837,10 @@ pre.tree { background: var(--color-surface-raised); border-radius: var(--radius-
 
 Review
 ├── total == 0               → noScreenshots block
-├── queue empty              → allDone block, Trash count and next arrival in the copy;
-│                              also when every screenshot is still waiting
+├── queue empty              → allDone block, Trash count and the next reminder or else the
+│                              next arrival in the copy; also when every screenshot is still waiting
 └── otherwise                → the deck</pre>
+        <div class="note" style="margin-top:var(--space-s4)"><strong>A tap on the reminder</strong> is a launch or a return to the foreground like any other: this table decides where it lands, and the reminder carries no route of its own (ADR-034).</div>
       </section>
 
 
@@ -876,7 +887,7 @@ Review
 <tr><td><code>reviewing</code></td><td>verdict button · arrow key · VoiceOver action</td><td><code>exiting</code></td><td>synthesized flick</td></tr>
 <tr><td><code>exiting</code></td><td>60 % of the exit duration</td><td><code>promoting</code></td><td>the verdict's side effect; rewind entry replaced</td></tr>
 <tr><td><code>promoting</code></td><td>queue non-empty</td><td><code>reviewing</code></td><td>next card fades in</td></tr>
-<tr><td><code>promoting</code></td><td>queue empty</td><td><code>allDone</code></td><td><code>DSHaptic.queueDone</code></td></tr>
+<tr><td><code>promoting</code></td><td>queue empty</td><td><code>allDone</code></td><td><code>DSHaptic.queueDone</code>; the reminder, if on, moved to 30 days from now</td></tr>
 <tr><td><code>reviewing</code> · <code>allDone</code></td><td>rewind, entry present</td><td><code>rewinding</code></td><td>side effect reversed exactly</td></tr>
 <tr><td><code>rewinding</code></td><td>landing</td><td><code>reviewing</code></td><td>—</td></tr>
 <tr><td><code>allDone</code></td><td>a due screenshot becomes unreviewed again, or a waiting one comes due at a refresh</td><td><code>reviewing</code></td><td>it takes its place by date</td></tr>
@@ -888,6 +899,13 @@ Review
 <tr><td><code>reviewing</code></td><td>a waiting screenshot comes due at a refresh</td><td>same state, reviewTotal + 1</td><td>joins behind the front card, never under the thumb</td></tr>
 <tr><td><code>reviewing</code></td><td>the front screenshot is deleted in Photos</td><td><code>promoting</code></td><td>skipped silently, no verdict</td></tr>
 </tbody></table></div>
+        <p class="subhead">The reminder</p>
+<div class="tbl-scroll"><table class="tbl"><thead><tr><th>Reminder</th><th>Meaning</th><th>The allDone block shows</th></tr></thead><tbody>
+<tr><td>off</td><td>notifications allowed, or never asked for, and nothing pending</td><td>“Remind me every 30 days”, and the “Next screenshot” line when one waits</td></tr>
+<tr><td>on</td><td>notifications allowed and the request pending</td><td>“Next reminder: Nov 28.” in place of the “Next screenshot” line, and no reminder action</td></tr>
+<tr><td>denied</td><td>notifications declined, or allowed with alerts, the lock screen and Notification Center all off</td><td>“Turn on reminders in Settings”, and the “Next screenshot” line when one waits</td></tr>
+</tbody></table></div>
+        <div class="note" style="margin-top:var(--space-s4)"><strong>A finished queue moves the reminder</strong> (ADR-034). Each time the queue runs out under review, the transition that fires <code>DSHaptic.queueDone</code>, the reminder, if it is on, is replaced by one that fires 30 days from that moment and every 30 days after. A launch that starts out done and a first screenshot that arrives and waits finish nothing and leave it where it is. The three states above are read from iOS when the allDone block appears and on every return to the foreground.</div>
       </section>
 
 
@@ -909,8 +927,11 @@ Review
 <tr><td>Permission</td><td>Show me the screenshots</td><td>—</td><td>—</td><td>—</td><td>—</td><td>the iOS photo-library dialog</td></tr>
 <tr><td>Permission · limited</td><td>Pick more · Sift these N (the ready ones), or Continue when none are ready</td><td>—</td><td>—</td><td>—</td><td>re-evaluated</td><td>the picker · none</td></tr>
 <tr><td>Permission · denied</td><td>Open Settings</td><td>—</td><td>—</td><td>—</td><td>—</td><td>leaves the app</td></tr>
+<tr><td>Review · all done</td><td>Remind me every 30 days</td><td>—</td><td>—</td><td>—</td><td>—</td><td>the iOS notification dialog, the first time only</td></tr>
+<tr><td>Review · all done</td><td>Turn on reminders in Settings</td><td>—</td><td>—</td><td>—</td><td>—</td><td>leaves the app</td></tr>
 </tbody></table></div>
         <div class="note" style="margin-top:var(--space-s4)"><strong>Under limited access</strong>, if PhotoKit refuses the album write, the archive list still records the verdict and the album catches up when access widens (ADR-010).</div>
+        <div class="note" style="margin-top:var(--space-s4)"><strong>The two reminder actions</strong> change no membership. Remind me every 30 days adds the one pending notification request, asking for permission first if iOS never has; after that it is replaced each time the queue runs out under review (section 05, ADR-034).</div>
       </section>
 
 
@@ -926,9 +947,10 @@ Review
 <tr><td>Acknowledged selection count</td><td>app-local store</td><td>—</td><td>no</td><td>access becomes authorized</td></tr>
 <tr><td>Rewind entry</td><td>memory</td><td>—</td><td>no</td><td>cold launch · cap · invalidation</td></tr>
 <tr><td>Authorization</td><td>the system</td><td>—</td><td>yes</td><td>the user, in Settings</td></tr>
+<tr><td>Reminder</td><td>iOS, as the pending notification request</td><td><code>sift.reminder</code>, with the moment it was added</td><td>no: uninstalling removes it and the notification permission</td><td>nothing in the app; notifications off in Settings silence it without removing it</td></tr>
 </tbody></table></div>
         <div class="grid-cards cols-2" style="margin-top:var(--space-s4)">
-          <div class="card"><p class="t-subhead">Deliberately not stored</p><p class="t-body">No “onboarding seen” flag: Permission appears whenever the status makes it necessary and never otherwise. No per-screenshot “reviewed” flag: derived. No “waiting” flag and no schedule for when a screenshot comes due: derived from its creation date. No copy of the favorite flag. No session log, no statistics.</p></div>
+          <div class="card"><p class="t-subhead">Deliberately not stored</p><p class="t-body">No “onboarding seen” flag: Permission appears whenever the status makes it necessary and never otherwise. No per-screenshot “reviewed” flag: derived. No “waiting” flag and no schedule for when a screenshot comes due: derived from its creation date. No copy of the favorite flag. No session log, no statistics. No reminder flag and no reminder date: on is notification authorization plus the pending request, and its next date is computed from that request (ADR-034).</p></div>
           <div class="card"><p class="t-subhead">After a reinstall</p><p class="t-body">The trash list is gone, and because nothing was deleted from Photos the trashed screenshots simply return to the queue (a recent one waits until it is 30 days old). The archive list is gone too, but the album is not: an empty store adopts an album titled with the brand name and seeds the list from its members.</p></div>
         </div>
       </section>
@@ -962,7 +984,9 @@ Review
 <tr><td>Photo-library access dialog</td><td><code>requestAuthorization(for: .readWrite)</code> on the Permission CTA, never on launch</td><td>authorized → Review · limited → interstitial · denied → denied state</td></tr>
 <tr><td>Limited-library picker</td><td><code>presentLimitedLibraryPicker(from:)</code> on Pick more</td><td>on dismiss the selection count is re-read and the interstitial updates</td></tr>
 <tr><td>Delete confirmation</td><td><code>performChanges</code> with <code>deleteAssets</code> — one dialog per call, so “all” is one batch</td><td>confirmed → cells removed, purgeDone · cancelled → “Not deleted”, nothing changes · partial failure → “Couldn't delete N. Try again.”</td></tr>
-<tr><td>Settings</td><td><code>UIApplication.openSettingsURLString</code> on Open Settings</td><td>re-routed on the next scenePhase active</td></tr>
+<tr><td>Settings</td><td><code>UIApplication.openSettingsURLString</code> on Open Settings; <code>openNotificationSettingsURLString</code>, the app’s notification settings, on Turn on reminders in Settings</td><td>re-routed on the next scenePhase active, when the allDone block also reads the reminder again</td></tr>
+<tr><td>Notification permission dialog</td><td><code>requestAuthorization(options: [.alert, .sound])</code> on Remind me every 30 days, never on launch, and only while iOS has never asked</td><td>allowed → the reminder is scheduled, permissionGranted, the block reads “Next reminder”, VoiceOver hears the date · declined → “Turn on reminders in Settings”, and VoiceOver hears it</td></tr>
+<tr><td>The reminder</td><td>one request, <code>sift.reminder</code>, with a repeating 30-day time-interval trigger: added on Remind me every 30 days, replaced each time the queue runs out under review. Its title and body are the app’s words (UI_DESIGN section 12)</td><td>delivered as a banner and to Notification Center, not shown while the app is open · a tap opens the app, routed as at launch · off, on or denied</td></tr>
 </tbody></table></div>
       </section>
 
@@ -981,12 +1005,12 @@ Review
         <h2>Out of scope for v1</h2>
         <p class="section__lead">Named so nobody has to wonder.</p>
 
-        <div class="card"><p class="t-body">Search and text filters · a Settings screen · statistics and streaks · multi-select in Trash (ADR-015) · deep links, widgets and Shortcuts · an iPad layout · syncing the app-local lists through iCloud · reviewing photos that are not screenshots · any AI assistance.</p></div>
+        <div class="card"><p class="t-body">Search and text filters · a Settings screen (so the reminder is turned off in iOS Settings, ADR-034) · statistics and streaks · multi-select in Trash (ADR-015) · deep links, widgets and Shortcuts · an iPad layout · syncing the app-local lists through iCloud · reviewing photos that are not screenshots · any AI assistance.</p></div>
       </section>
 
     </div>
     <footer class="footer">
-      <p>Information architecture v1.2, 2026-09-28: confirmed 2026-09-27 (ADR-025), with the 30-day rule of ADR-032 and its follow-ups in ADR-033 added 2026-09-28. Diagrams and tables follow <code class="inline">docs/knowledge/IA.md</code>; the page is styled from the same tokens as <code class="inline">design-system.html</code>.</p>
+      <p>Information architecture v1.3, 2026-09-29: confirmed 2026-09-27 (ADR-025), with the 30-day rule of ADR-032 and its follow-ups in ADR-033 added 2026-09-28, and the cleanup reminder of ADR-034 added 2026-09-29. Diagrams and tables follow <code class="inline">docs/knowledge/IA.md</code>; the page is styled from the same tokens as <code class="inline">design-system.html</code>.</p>
     </footer>
   </main>
 </div>

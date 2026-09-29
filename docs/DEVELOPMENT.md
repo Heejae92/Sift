@@ -14,26 +14,26 @@ name lint from it. The app consumes those tokens and nothing else (P-12).
 |---|---|
 | `project.yml` | The XcodeGen spec. `Sift.xcodeproj` is generated from it and git-ignored (ADR-026) |
 | `Sift/SiftApp.swift`, `Sift/Navigation/` | Entry point, the route enum, and the root gate that shows Permission, the limited interstitial, or the app's navigation stack |
-| `Sift/Data/` | `Screenshot`, `Verdict`, the JSON store, `ReviewPolicy` (only screenshots at least 30 days old are reviewed, ADR-032), and `Catalog`: the one source of truth, which derives the queue instead of storing it (ADR-025) |
-| `Sift/Services/` | The `PhotoLibrary` protocol, its PhotoKit implementation, the image loader, and the system UI hooks |
+| `Sift/Data/` | `Screenshot`, `Verdict`, the JSON store, `ReviewPolicy` (only screenshots at least 30 days old are reviewed, ADR-032), `ReminderPolicy` (the reminder comes back every 30 days, and when it fires next, ADR-034), and `Catalog`: the one source of truth, which derives the queue instead of storing it (ADR-025) |
+| `Sift/Services/` | The `PhotoLibrary` protocol and its PhotoKit implementation, `ReminderScheduler.swift` (the reminder's protocol, its status and its UserNotifications implementation, ADR-034), the image loader, and the system UI hooks |
 | `Sift/Components/` | Shared views: buttons, color blocks, empty states, the thumbnail cell, the toast |
 | `Sift/Features/` | One folder per screen: Review, Permission, Trash, Library, Viewer, Credits |
-| `Sift/DesignSystem/*.swift` | The nine token files. The only place a design value is typed; a product rule's constant lives in `Sift/Data/` under the ADR that set it (`ReviewPolicy`, ADR-032) |
+| `Sift/DesignSystem/*.swift` | The nine token files. The only place a design value is typed; a product rule's constant lives in `Sift/Data/` under the ADR that set it (`ReviewPolicy`, ADR-032; `ReminderPolicy`, ADR-034) |
 | `Sift/Resources/` | The asset catalog, the four Pretendard cuts with their license (`Fonts/Pretendard-OFL.txt`), and six sample screenshots (real iOS screens captured with `SiftUITests/SampleCaptureTests`) used by the demo stack and as the simulator seed |
 | `Sift/PrivacyInfo.xcprivacy` | Privacy manifest: no tracking, no collection, no required-reason APIs |
-| `SiftTests/` | Swift Testing suites, with an actor fake for Photos and an in-memory store, plus the opt-in sample seed tool (`SampleSeedTests`) |
+| `SiftTests/` | Swift Testing suites, with actor fakes for Photos (`FakePhotoLibrary`) and for the reminder (`FakeReminderScheduler`) and an in-memory store, plus the opt-in sample seed tool (`SampleSeedTests`) |
 | `SiftUITests/` | XCTest UI tests: the screenshot tour (`SiftTourTests`), the opt-in sample capture tool (`SampleCaptureTests`) and the opt-in demo run behind the video (`DemoVideoTests`) |
 | `docs/knowledge/ARCHITECTURE.md` | Stack, module map, data flow, the deck state machine, concurrency rules, build order |
 | `docs/knowledge/UI_DESIGN.md` | The design system: tokens, components, screens, the generated contrast table |
-| `docs/knowledge/IA.md` | The information architecture: objects, screens, navigation, routing, the queue lifecycle, persistence, external change. ADR-025, confirmed 2026-09-27; the 30-day rule, ADR-032, 2026-09-28 |
+| `docs/knowledge/IA.md` | The information architecture: objects, screens, navigation, routing, the queue lifecycle, persistence, external change. ADR-025, confirmed 2026-09-27; the 30-day rule, ADR-032, 2026-09-28; the reminder, ADR-034, 2026-09-29 |
 | `docs/knowledge/DESIGN_PRINCIPLES.md` | P-01 to P-23, the rules a review cites |
 | `docs/knowledge/PRINCIPLES_CHECKLIST.md` | 27 lines for the 23 principles (P-19 gets four, P-15 gets two), plus a pre-ship list for a screen |
-| `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-033, plus the superseded decisions S-1 to S-4 |
+| `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-034, plus the superseded decisions S-1 to S-4 |
 | `docs/superpowers/specs/2026-09-23-sift-design-system-design.md` | The design spec behind the design system |
 | `docs/references.md` | Reference boards, the format reference, three Lazyweb permission-screen links |
 | `docs/DEVELOPMENT.md` | This file: the file map, building, running on the simulator, recording the demo, the design-system commands and the notes that used to sit in the README |
 | `docs/demo/` | The demo video at the top of the README (`sift-demo.mp4`) and its poster (`sift-demo-poster.png`), made by `SiftUITests/DemoVideoTests` and `scripts/make-demo-video.swift` |
-| `docs/screenshots/` | The simulator frames shown at the top of the README, exported from the screenshot tour and downscaled with `sips --resampleWidth 480` |
+| `docs/screenshots/` | The simulator frames shown at the top of the README, exported from the screenshot tour, downscaled with `sips --resampleWidth 480` and given a 3 px `#D1D1D6` border (`magick … -bordercolor '#D1D1D6' -border 3`). `3-all-done.png` comes from the reminder check of ADR-034 instead, with the status bar pinned to the tour's 2:26 (`simctl status_bar … override --time 2:26`) |
 | `design-system.html` | Single-file living style guide with a working swipe demo |
 | `ia.html` | The information architecture as diagrams: object model, screen map, launch routing, queue state machine |
 | `scripts/ds_tokens.py` | `contrast`, `emit-css`, `lint`. Standard library only |
@@ -47,17 +47,17 @@ print:
 
 ```
 ls Sift/DesignSystem/*.swift | wc -l                        # token files, 9
-grep -c '^## ADR-' docs/knowledge/DECISIONS.md              # ADRs, 33
+grep -c '^## ADR-' docs/knowledge/DECISIONS.md              # ADRs, 34
 grep -o '^## ADR-[0-9]\{3\}' docs/knowledge/DECISIONS.md \
-  | tail -1                                                # highest ADR, ## ADR-033
+  | tail -1                                                # highest ADR, ## ADR-034
 grep -c '^### S-' docs/knowledge/DECISIONS.md               # superseded entries, 4
 grep -c '^\*\*P-' docs/knowledge/DESIGN_PRINCIPLES.md       # principles, 23
 grep -c '^- \[ \] P-' docs/knowledge/PRINCIPLES_CHECKLIST.md # principle checklist lines, 27
 ```
 
-The figures after each `#` are what those commands printed on 2026-09-28, run from the repository
+The figures after each `#` are what those commands printed on 2026-09-29, run from the repository
 root. The ADR range in the table above comes from the second and third of them: the log runs
-ADR-001 to ADR-033 with no gaps, and S-1 to S-4 alongside.
+ADR-001 to ADR-034 with no gaps, and S-1 to S-4 alongside.
 
 ## Building the app
 
@@ -129,6 +129,23 @@ carry it, so a simulator shows the real rule by default. The unit tests ignore i
 catalog the 30-day rule themselves, because the Test action runs with the Run action's arguments.
 Both arguments are read only by a DEBUG build on a simulator. A release build, and any build for a
 device, a Debug run from Xcode on an iPhone included, ignores both.
+
+**The reminder** (ADR-034) comes every 30 days, so a simulator build takes a third argument,
+`-SiftReminderSeconds <n>`, a whole number of seconds from 60 up (iOS refuses a shorter repeating
+interval). Launch with it, tap Remind me every 30 days on the all-done block, allow notifications,
+and go to the home screen: the app shows no reminder while it is open, and the first one arrives `n`
+seconds after the tap, then every `n` seconds.
+
+```
+xcrun simctl launch booted com.heejaeeo.sift -SiftReminderSeconds 60
+```
+
+A pending reminder keeps the interval it was added with, so relaunching without the argument leaves
+the short one in place until it is re-anchored: finish a sift, for example by restoring one
+screenshot from Trash and swiping it again, to put it back on 30 days. The block offers no reminder
+action while the reminder is on. A declined prompt cannot be reset from the command line either; only
+uninstalling the app makes iOS ask again, and that also clears the app's store. Like the other two,
+the argument is read only by a DEBUG build on a simulator, and the scheme does not pass it.
 
 Two things the machine may get wrong. If more than one device is named "iPhone 17", pass the
 device by id (`-destination 'platform=iOS Simulator,id=<UDID>'` from `xcrun simctl list devices`),
