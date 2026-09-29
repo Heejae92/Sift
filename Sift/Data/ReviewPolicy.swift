@@ -18,9 +18,9 @@ enum ReviewPolicy {
     static let minimumAge: TimeInterval = TimeInterval(launchOverrideDays ?? minimumAgeDays) * secondsPerDay
 
     /// Read on a DEBUG simulator build only, where the seeded images are recent and would otherwise
-    /// wait a month (README "Running on the simulator"). A release build and every build for a device
-    /// ignore it, the same gate as `-SiftAllImages` (ADR-027). The scheme does not pass it, so a
-    /// simulator shows the real rule unless someone asks otherwise.
+    /// wait a month (docs/DEVELOPMENT.md "Running on the simulator"). A release build and every build
+    /// for a device ignore it, the same gate as `-SiftAllImages` (ADR-027). The scheme does not pass
+    /// it, so a simulator shows the real rule unless someone asks otherwise.
     private static var launchOverrideDays: Int? {
         #if DEBUG && targetEnvironment(simulator)
         return overrideDays(in: ProcessInfo.processInfo.arguments)

@@ -71,8 +71,8 @@ here is a principle the other document lacks.
 
 ## Commands
 
-Four commands, every time. The same four appear in `README.md`, in P-23 and in the guide's checklist
-section.
+Four commands, every time. The same four appear in `docs/DEVELOPMENT.md`, in P-23 and in the guide's
+checklist section.
 
 ```
 python3 scripts/ds_tokens.py contrast                           # 43 pairs · 0 failure(s), no gamut warning

@@ -74,7 +74,7 @@ Sift/                              app target sources (XcodeGen `sources: [Sift]
     SampleScreenshots/             six real iOS screens (captured by SiftUITests/SampleCaptureTests) for DemoStack and for seeding a simulator
   PrivacyInfo.xcprivacy            no tracking, no collected data, no required-reason APIs
 SiftTests/                         Swift Testing · runs on the simulator against FakePhotoLibrary · SampleSeedTests (opt-in seed tool)
-SiftUITests/                       XCTest UI tests: SiftTourTests (the screenshot tour) · SampleCaptureTests (opt-in capture tool)
+SiftUITests/                       XCTest UI tests: SiftTourTests (the screenshot tour) · SampleCaptureTests (opt-in capture tool) · DemoVideoTests (opt-in demo run)
 project.yml                        targets Sift, SiftTests, SiftUITests · scheme Sift
 ```
 
@@ -252,11 +252,22 @@ local scheme edit adding `-SiftMinimumAgeDays` would otherwise change what the t
 
 - `SiftTourTests` is the screenshot tour. It launches with `-SiftAllImages`, grants photo access
   through the system dialog on a fresh install, walks Permission, Review, Trash, the viewer, the
-  purge sheet, Library and Credits, and attaches a screenshot at each stop (README "Running on the
-  simulator").
+  purge sheet, Library and Credits, and attaches a screenshot at each stop (`docs/DEVELOPMENT.md`
+  "Running on the simulator").
 - `SampleCaptureTests` is a development tool, not a test of the app: it captures the six sample
   screenshots from the simulator's built-in apps. It is skipped unless `SIFT_CAPTURE_SAMPLES=1` is in
   the runner's environment, passed on the `xcodebuild` line as `TEST_RUNNER_SIFT_CAPTURE_SAMPLES=1`.
+- `DemoVideoTests` is the other development tool of that kind: a paced run through Permission, Review
+  (three swipes, a rewind, the rest of the deck), the all-done block, Trash (its Delete-all sheet is
+  answered with Keep, so nothing is deleted) and Library, which `simctl io recordVideo` films and
+  `scripts/make-demo-video.swift` turns into the video on the project page (`docs/demo/`). It
+  launches with no launch arguments, so it sees the real 30-day rule (ADR-032). It is skipped unless
+  `SIFT_RECORD_DEMO=1` is in the runner's environment, passed as `TEST_RUNNER_SIFT_RECORD_DEMO=1`.
+  Like `SampleCaptureTests` it is gated by the environment alone and is simulator-only by nature: it
+  is filmed with `simctl io recordVideo` and depends on the seeded simulator library. Unlike the seed
+  tool below it holds no PhotoKit code, so it needs no `#if targetEnvironment(simulator)`. It
+  archives, favorites and trashes the seeded samples, so a second take starts from an unreviewed
+  library (`docs/DEVELOPMENT.md` "Recording the demo").
 
 Its companion lives in `SiftTests`, because it needs the app's own Photos access rather than a UI:
 
@@ -268,7 +279,7 @@ Its companion lives in `SiftTests`, because it needs the app's own Photos access
   passes on from its own environment as `TEST_RUNNER_SIFT_SEED_SAMPLES=1`; it fails with a message
   when the app lacks full access, and a second run adds nothing. Access has to come first: on a fresh
   or erased simulator the order is `simctl addmedia`, grant access, the seed tool, then the tour
-  (README "Running on the simulator").
+  (`docs/DEVELOPMENT.md` "Running on the simulator").
 
 Views are verified on the simulator with the design system's checklist and the tour's pictures, not
 by unit tests. The limited-access interstitial is outside the tour, which runs with full access: its
@@ -286,7 +297,8 @@ xcodebuild -scheme Sift -destination 'platform=iOS Simulator,name=iPhone 17' \
 ```
 
 The unit tests are the plain test command. The tour is its own command because it needs a seeded,
-granted simulator and changes the app's data there (README "Running on the simulator").
+granted simulator and changes the app's data there (`docs/DEVELOPMENT.md` "Running on the
+simulator").
 
 Run with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` on this machine
 (`xcode-select` points at the command-line tools). The four design-system commands (P-23) are
