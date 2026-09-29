@@ -28,12 +28,10 @@ Sift turns clearing out screenshots into a quick, regular habit instead of a cho
 ## How it works
 
 <p align="center">
-  <video src="docs/demo/sift-demo.mp4" poster="docs/demo/sift-demo-poster.png" width="280" controls muted playsinline>
-    <a href="https://heejae92.github.io/Sift/#how-it-works"><img src="docs/demo/sift-demo-poster.png" width="280" alt="Demo video of Sift: onboarding, three swipes and a rewind, all done, Trash and Library"></a>
-  </video>
+  <video src="docs/demo/sift-demo.mp4" poster="docs/demo/sift-demo-poster.png" width="280" controls muted playsinline></video>
 </p>
 
-<p align="center"><sub>Demo, about 70 seconds, no sound: onboarding, three swipes and a rewind, all done, Trash, Library.</sub></p>
+<p align="center"><sub>Demo, about 70 seconds, no sound: onboarding, three swipes and a rewind, all done, Trash, Library. <a href="https://heejae92.github.io/Sift/docs/demo/sift-demo.mp4">Open the video</a></sub></p>
 
 1. **Start.** A short demo shows the three swipes. Tap Get started and allow access to Photos. Nothing leaves your phone.
 2. **Sift.** Each card is a screenshot from 30 or more days ago, newest first. Swipe left to Trash, right to the "Sift Archive" album, or up to Favorites. Tap Rewind to undo the last swipe.
