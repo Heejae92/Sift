@@ -28,13 +28,15 @@ name lint from it. The app consumes those tokens and nothing else (P-12).
 | `docs/knowledge/IA.md` | The information architecture: objects, screens, navigation, routing, the queue lifecycle, persistence, external change. ADR-025, confirmed 2026-09-27; the 30-day rule, ADR-032, 2026-09-28; the reminder, ADR-034, 2026-09-29 |
 | `docs/knowledge/DESIGN_PRINCIPLES.md` | P-01 to P-23, the rules a review cites |
 | `docs/knowledge/PRINCIPLES_CHECKLIST.md` | 27 lines for the 23 principles (P-19 gets four, P-15 gets two), plus a pre-ship list for a screen |
-| `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-034, plus the superseded decisions S-1 to S-4 |
+| `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-035, plus the superseded decisions S-1 to S-4 |
 | `docs/superpowers/specs/2026-09-23-sift-design-system-design.md` | The design spec behind the design system |
 | `docs/references.md` | Reference boards, the format reference, three Lazyweb permission-screen links |
 | `docs/DEVELOPMENT.md` | This file: the file map, building, running on the simulator, recording the demo, the design-system commands and the notes that used to sit in the README |
 | `docs/demo/` | The demo video at the top of the README (`sift-demo.mp4`) and its poster (`sift-demo-poster.png`), made by `SiftUITests/DemoVideoTests` and `scripts/make-demo-video.swift` |
 | `docs/screenshots/` | The simulator frames shown at the top of the README, exported from the screenshot tour, downscaled with `sips --resampleWidth 480` and given a 3 px `#D1D1D6` border (`magick … -bordercolor '#D1D1D6' -border 3`). `3-all-done.png` comes from the reminder check of ADR-034 instead, with the status bar pinned to the tour's 2:26 (`simctl status_bar … override --time 2:26`) |
 | `design-system.html` | Single-file living style guide with a working swipe demo |
+| `simulator.html` | The app simulated in a browser, embedded in the README's "Try it" section (ADR-035). One file, no build step; it reads its numbers from the generated `:root` block, which `lint` checks |
+| `docs/simulator/` | The simulator's six cards: the sample screenshots resampled with `sips --resampleWidth 600 -s format jpeg -s formatOptions 78` |
 | `ia.html` | The information architecture as diagrams: object model, screen map, launch routing, queue state machine |
 | `scripts/ds_tokens.py` | `contrast`, `emit-css`, `lint`. Standard library only |
 | `scripts/typecheck-ds.sh` | Type-checks the token files without an Xcode project |
@@ -47,9 +49,9 @@ print:
 
 ```
 ls Sift/DesignSystem/*.swift | wc -l                        # token files, 9
-grep -c '^## ADR-' docs/knowledge/DECISIONS.md              # ADRs, 34
+grep -c '^## ADR-' docs/knowledge/DECISIONS.md              # ADRs, 35
 grep -o '^## ADR-[0-9]\{3\}' docs/knowledge/DECISIONS.md \
-  | tail -1                                                # highest ADR, ## ADR-034
+  | tail -1                                                # highest ADR, ## ADR-035
 grep -c '^### S-' docs/knowledge/DECISIONS.md               # superseded entries, 4
 grep -c '^\*\*P-' docs/knowledge/DESIGN_PRINCIPLES.md       # principles, 23
 grep -c '^- \[ \] P-' docs/knowledge/PRINCIPLES_CHECKLIST.md # principle checklist lines, 27
@@ -57,7 +59,7 @@ grep -c '^- \[ \] P-' docs/knowledge/PRINCIPLES_CHECKLIST.md # principle checkli
 
 The figures after each `#` are what those commands printed on 2026-09-29, run from the repository
 root. The ADR range in the table above comes from the second and third of them: the log runs
-ADR-001 to ADR-034 with no gaps, and S-1 to S-4 alongside.
+ADR-001 to ADR-035 with no gaps, and S-1 to S-4 alongside.
 
 ## Building the app
 
@@ -209,8 +211,9 @@ committing.
 
 ## Viewing the guide
 
-The guide and the IA page are published with GitHub Pages from `main`: https://heejae92.github.io/Sift/design-system.html and https://heejae92.github.io/Sift/ia.html. Every push to `main` republishes them. Locally, run `open design-system.html`, or serve the folder with `python3 -m http.server` and open
-`http://localhost:8000/design-system.html`. It is one file with inline CSS and JavaScript and needs
+The guide, the IA page and the simulator are published with GitHub Pages from `main`: https://heejae92.github.io/Sift/design-system.html, https://heejae92.github.io/Sift/ia.html and https://heejae92.github.io/Sift/simulator.html. Every push to `main` republishes them. Locally, run `open design-system.html`, or serve the folder with
+`python3 -m http.server --bind 127.0.0.1 8000` and open `http://localhost:8000/design-system.html`.
+Without `--bind` the server answers every machine on the network, and it serves `.git` too. It is one file with inline CSS and JavaScript and needs
 no build step.
 
 ## Design-system commands
@@ -292,6 +295,42 @@ own tracking.
 **Pretendard is licensed under the SIL Open Font License 1.1**; the license text,
 `Sift/Resources/Fonts/Pretendard-OFL.txt`, ships next to the fonts and inside the app bundle, as the
 license requires.
+
+**Pinned stylesheet.** The three pages load Pretendard's stylesheet from jsDelivr at a fixed version
+and carry its hash in `integrity`, so a file that changed at that address is refused and the page
+falls back to the system font. The file is `pretendard.css`, the repository's own, whose bytes at
+jsDelivr and at `raw.githubusercontent.com` gave the same hash on 2026-09-29. It is not
+`pretendard.min.css`: jsDelivr generates that one, says so in its first lines, "Do NOT use SRI with
+dynamically generated files!", and may generate it again. When the version in the address changes,
+recompute the hash and paste it into `design-system.html`, `ia.html` and `simulator.html`:
+
+```
+curl -fsSL --compressed https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css | openssl dgst -sha384 -binary | openssl base64 -A
+```
+
+A wrong hash is silent on a machine with Pretendard installed, the owner's Mac included: the pages
+name the installed font first, so the refused stylesheet is never missed. The browser's console
+says so, in one line naming `integrity`. Adobe's kit cannot be pinned this way, because Adobe
+rewrites `blt4ith.css` whenever the kit is published.
+
+**The simulator's Content-Security-Policy names two jsDelivr addresses, not the host.** The
+stylesheet is at `…/pretendard@v1.3.9/dist/web/static/pretendard.css` and asks for its fonts
+at `…/pretendard@v1.3.9/packages/pretendard/dist/web/static/`, a different folder, so `style-src`
+and `font-src` differ. A new Pretendard version changes both, and the hash above. A machine with
+Pretendard installed never asks for the web fonts, so a wrong `font-src` shows no error there. Test
+it in the page's console with the address the stylesheet itself asks for, not one typed by hand:
+
+```
+const sheet = [...document.styleSheets].find(s => s.href && s.href.includes('pretendard'));
+const font = new URL(sheet.cssRules[0].style.getPropertyValue('src').match(/url\("?([^")]+)/)[1], sheet.href).href;
+await new FontFace('probe', `url(${font})`).load();   // resolves: allowed · NetworkError and a font-src line: refused
+```
+
+**The simulator is checked by hand.** It has no tests of its own. Serve the folder as for the guide,
+open `http://localhost:8000/simulator.html`, and drive it; the console stays empty, and a policy
+violation would print there. Reduce Motion is a system setting (macOS: System Settings ›
+Accessibility › Display), or an emulated media feature in the browser's developer tools. After a
+change to a screen in the app, make the same change here (ADR-035).
 
 **Bump the guide's `?v=` when the Typekit kit changes.** Typekit serves kit CSS with `max-age=600`,
 so an edit to the kit does not reach the page for ten minutes. `design-system.html` loads

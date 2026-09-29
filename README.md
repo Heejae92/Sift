@@ -2,6 +2,8 @@
 
 Sift helps you clear out old screenshots, one swipe at a time.
 
+**[Try the simulator](https://heejae92.github.io/Sift/simulator.html)** · [Code on GitHub](https://github.com/Heejae92/Sift)
+
 <p align="center">
   <img src="docs/screenshots/1-onboarding.png" width="160" alt="Welcome screen: swipe left to Trash, right to Archive, up to Fave, and a Get started button">
   <img src="docs/screenshots/2-review.png" width="160" alt="Review screen: a Settings screenshot as a card, with Rewind, Trash, Fave and Archive buttons">
@@ -40,8 +42,16 @@ Sift turns clearing out screenshots into a quick monthly ritual instead of a cho
 4. **Empty Trash.** Trash shows how many screenshots are waiting and how much space they use. Delete them all at once, or restore any you want to keep. iOS asks you to confirm.
 5. **Find what you kept.** Library has two tabs, Favorites and Archive.
 
+## Try it
+
+<p align="center">
+  <iframe src="simulator.html" title="Sift simulator" width="100%" height="900" style="border:0; max-width:460px; height:min(960px, 92vh)" loading="lazy"></iframe>
+</p>
+
+<p align="center"><sub>The app, simulated in your browser with six sample screenshots. Drag a card left, right or up, or use the arrow keys. Nothing you do here is stored or sent. <a href="https://heejae92.github.io/Sift/simulator.html">Open the simulator</a></sub></p>
+
 ---
 
 Course project for IXD 750 Product Innovation (category: Ritual), Academy of Art University, 2026.
 
-**More:** [Design system](https://heejae92.github.io/Sift/design-system.html) · [Information architecture](https://heejae92.github.io/Sift/ia.html) · [Developer notes](https://github.com/Heejae92/Sift/blob/main/docs/DEVELOPMENT.md)
+**More:** [Simulator](https://heejae92.github.io/Sift/simulator.html) · [Code on GitHub](https://github.com/Heejae92/Sift) · [Design system](https://heejae92.github.io/Sift/design-system.html) · [Information architecture](https://heejae92.github.io/Sift/ia.html) · [Developer notes](https://github.com/Heejae92/Sift/blob/main/docs/DEVELOPMENT.md)

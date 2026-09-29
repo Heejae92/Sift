@@ -1,6 +1,6 @@
 # Sift · Architecture
 
-v1.2 · 2026-09-29 · English · companion to `IA.md` (what exists) and `UI_DESIGN.md` (what it looks like)
+v1.3 · 2026-09-29 · English · companion to `IA.md` (what exists) and `UI_DESIGN.md` (what it looks like)
 
 This file is the map of the code: which modules exist, what each one owns, how data moves, and
 what a change has to touch. Read it before adding a file; update it when you add one. Decisions
@@ -83,6 +83,13 @@ SiftTests/                         Swift Testing · runs on the simulator agains
 SiftUITests/                       XCTest UI tests: SiftTourTests (the screenshot tour) · SampleCaptureTests (opt-in capture tool) · DemoVideoTests (opt-in demo run)
 project.yml                        targets Sift, SiftTests, SiftUITests · scheme Sift
 ```
+
+Beside the app target, the repository root holds three hand-written pages that GitHub Pages serves:
+`design-system.html` (the guide), `ia.html` (the diagrams) and `simulator.html` (the app simulated
+in a browser, ADR-035, with its six images in `docs/simulator/`). None of them is built from the
+Swift sources. What ties them to the app is the generated `:root` block: `lint` fails when the copy
+in the guide or in the simulator is stale. A change to a screen's behaviour is made in the app and
+then, by hand, in `simulator.html`.
 
 Rules of the map:
 

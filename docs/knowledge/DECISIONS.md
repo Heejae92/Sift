@@ -1655,6 +1655,145 @@ uninstalled, which would also clear its store.
 
 ---
 
+## ADR-035 · A browser simulator on the project page, ported by hand from the app and its tokens
+
+**Context.** On 2026-09-29 the owner asked for a simple simulator on the project page, as HTML, so
+that a reader can try the app on their own computer ("각자의 컴퓨터에서 시뮬레이팅 할 수 있도록 웹 페이지에
+간단한 시뮬레이터를 만들어서 HTML로 넣어줘"), for a link to the code on GitHub, and for a security check
+before the push. The app runs on iOS only, and until now the page could show it only as five frames
+and a video. A SwiftUI app does not run in a browser, so whatever the page offers is a second
+implementation of the screens, and the question is how it stays honest.
+
+**Options.**
+- *An embedded device stream from a hosted service.* Runs the real binary, but needs an account, an
+  upload of each build and a third party that sees every session; rejected for a course page.
+- *A click-through of the five frames.* Cheap, and no swipe, which is the product.
+- *One hand-written page that reads the generated tokens.* More code, and it can drift from the app.
+
+**Decision.** The third. `simulator.html` is one file in the repository root, like
+`design-system.html` and `ia.html`, with no build step.
+
+*Numbers.* The page carries the generated `:root` block, and its script reads every number the
+generator emits, swipe, stack and duration, from those custom properties. What the generator does
+not emit is typed once and named where it is typed. In the page's own `:root` block: the four
+springs, which have no duration token and stand as their response on the guide's `--ease-snap`, as
+the guide does, and the phone itself, an iPhone 17 in points with its safe areas. In the script:
+the two product rules, `MINIMUM_AGE_DAYS` and `REMINDER_INTERVAL_DAYS`, which are
+`ReviewPolicy.minimumAgeDays` and `ReminderPolicy.intervalDays` and live under `Sift/Data/`, not in
+the design system; and three numbers that say how the page reads a pointer, a 100 ms window and an
+80 ms age limit for velocity, because a browser hands over samples where SwiftUI hands over a
+velocity, and the 10 pt a press must travel to become a drag, which is `DragGesture`'s default and
+which the app itself never types.
+
+*Behaviour.* The deck is a port of `DeckMotion` and `CardStack`, not a likeness. A verdict takes one
+path however it is given: the stamp goes to full, the card leaves, the verdict is recorded at
+`DSSwipe.promoteAt` of the way out, and the card is gone at the end. Input is closed while a card
+leaves and while one comes back (`IA.md` §5). A drag commits on its length, `hypot` of the
+translation, or on velocity along the sector's axis past the travel floor; a finger that has
+stopped carries no velocity, and one moving back toward the centre carries none into the throw. The
+down sector follows at `downFollow` on both axes. A throw after a drag turns to
+`exitRotationDegrees` and a button or key flick to `maxRotationDegrees`. The second card comes
+forward with the drag. A rewound card comes back from the pose it left with. State follows `IA.md`:
+three memberships, a derived queue whose front card changes only through a verdict, a rewind or its
+own disappearance, and a one-step rewind held in memory and dropped once its verdict no longer
+stands. Under Reduce Motion the substitutions are the app's: no rotation, lift or parallax, the
+stamp held for `stampHoldReduced` and the card cross-faded where it is, no burst, thumbnails
+fading together, and the Permission demo as three stamped panels.
+
+*Screens.* Permission with the demo, which loops synthetic input through the same arithmetic as a
+finger, takes a real swipe and checks the legend; the denied block and its "Not now"; Review with
+the all-done block, its reminder and `noScreenshots`; Trash with both rungs of deletion; Library;
+the viewer; Credits. The six cards are the app's own sample screenshots, resampled to 600 px JPEG
+under `docs/simulator/`, dated 31 to 71 days before the visit so that each is past the 30-day line
+of ADR-032. The iOS dialogs are drawn, labelled "Simulated iOS dialog", and colored by `--os-*`
+properties, because they stand in for the system and are not the app's. A trip to Settings cannot
+be drawn, so the page takes its outcome and says so in a line under the phone. The icons are the
+guide's own drawings; SF Symbols are licensed for Apple platforms and are not copied to the web.
+
+*Display type.* Pretendard Bold, which is what the app shows: it has no license for Forager yet, and
+`DSFont.resolvedDisplay` hands every display role to `textBold` (ADR-003). The first draft used
+Forager, which the web kit licenses, and its faces came out a fifth smaller than the app's and its
+headlines unlike the frames and the video that sit above the simulator on the same page. A
+simulator shows what the app shows. This was fixed in the implementation session and has not been
+shown to the owner; `--font-display` is the one property that changes it.
+
+*On the page.* `README.md` embeds the simulator in an `<iframe>` under "Try it", no taller than
+92 % of the visitor's window, so the whole phone shows. github.com strips that element, so the links
+beside it carry a reader there, as the video's caption does. The page moves focus only after the
+reader acts inside it: a frame that took focus as it loaded would take the arrow keys from the page
+around it.
+
+**Security.** The page asks for nothing and keeps nothing: no storage and no cookie. Its script
+asks for the page's own six images, all six as the page opens, so that no request depends on what
+a visitor does, and it can make no other: the Content-Security-Policy is `default-src 'none'` with
+images from the page's own origin, so `connect-src` is closed and fetch, XHR, WebSocket and
+beacons are refused. The page loads one stylesheet, Pretendard's from jsDelivr, with its hash in
+`integrity`, and that stylesheet's fonts. jsDelivr serves every public package, so the policy names
+the one stylesheet and the one font folder and not the host. Adobe's kit is not loaded, so a visit
+reaches one third-party service, jsDelivr and the networks it runs on, not two. Script and style
+are inline, because the page is one file, which is why the policy allows `'unsafe-inline'`; the
+page takes no input and writes text with `textContent` and never markup. In a browser that
+implements Trusted Types, `require-trusted-types-for 'script'` makes a later `innerHTML` fail
+instead of run; elsewhere the directive is ignored and the rest of the policy holds. The page sends
+no referrer.
+
+The security check before the push (2026-09-29, a separate reviewer over the change set, the
+tracked tree and all 18 commits, and a second pass over the rewritten page) found nothing that
+blocks it: no secret, no key, no metadata in the six images beyond the word "Screenshot". Two
+findings were low. The Pretendard stylesheet had no `integrity` on any of the three pages; it has
+now, and `docs/DEVELOPMENT.md` records how to recompute it under "Pinned stylesheet". The hash was
+first taken of `pretendard.min.css`, the file the pages had always loaded, which jsDelivr generates
+and asks not to be pinned; the three pages now load `pretendard.css`, the repository's own file,
+with the same nine faces from the same folder. `UI_DESIGN.md` §11.1 and `docs/references.md` have carried,
+since the first commit of the guide, three signed links to Lazyweb's reference screenshots, each
+good for one image, read-only, until 2027-09-22; they are Lazyweb's tokens, not the owner's, so
+there is nothing to rotate, and they are left as they are until the owner decides whether to cite
+the references without a link. The reviewer also proposed a font folder for the policy that would
+have refused every font: Pretendard's stylesheet asks for its fonts under `packages/pretendard/`,
+not beside itself. A machine with Pretendard installed never asks for them, so the mistake shows
+nowhere on the owner's Mac; `docs/DEVELOPMENT.md` records the test that does show it.
+
+**Consequences.** The simulator is a second implementation, and nothing proves it equal to the app.
+`lint` fails when its copy of the `:root` block is stale, which covers the numbers and not the
+behaviour: a change to a screen has to be made twice. The first draft is the evidence. It recorded a
+verdict as the throw began, never closed its input, measured a drag along its axis and committed on
+a velocity a second old, and it called itself a line-for-line port while doing so; a separate code
+review found all of it, and the deck was rewritten from the Swift sources.
+
+A second review approved the rewrite and found one fault of consequence, which belongs to the web
+and not to the app: a control that refused by being `disabled` dropped the keyboard's focus to the
+page, so a second Enter did nothing. A control here now refuses with `aria-disabled`, keeps the
+focus it has, and is `inert` only once it has left the screen. After an action focus stays where it
+is if that still exists, goes back to what opened the dialog if not, and otherwise to what the
+screen offers; a dialog keeps Tab inside it; and none of it happens while the page does not have
+the focus.
+
+Two differences from the app's frames are known and left. A face's centre glyph is drawn by the
+visitor's own system font (`UI_DESIGN.md` §9), so its size is the platform's: in Chromium on the
+owner's Mac the all-done face came out 188 pt tall against 201 pt in `3-all-done.png`. And the
+count badge on the Trash button is drawn where the app draws it, over the glyph, centred, top to
+top, as `2-review.png` shows, which is not the glyph's top-trailing corner that the comment in
+`ReviewScreen.swift` describes; the app's comment and its frame disagree, and the simulator follows
+the frame.
+
+Not simulated: the limited-access interstitial; the viewer's pinch, double tap and drag to dismiss;
+long-press menus; haptics; a screenshot coming due during a session, and so the "Next screenshot"
+line; an external change in Photos; a deletion that fails in part; the reminder's notification;
+Dynamic Type; the push between screens, which cross-fade here.
+
+Checked on 2026-09-29 in Chromium: every screen above, at the width of a window and at
+460 × 900, and inside a frame on a page of the same origin; drags, keys, buttons, rewind, both
+deletions and their cancellation, by synthetic pointer events and by a real keyboard and mouse
+driven through Playwright; Reduce Motion by emulation. Not checked: Safari, Firefox, a finger on a
+phone, a screen reader.
+
+**Applies to** `simulator.html`, `docs/simulator/`, `README.md`, `scripts/ds_tokens.py` (`lint`),
+`docs/DEVELOPMENT.md`, `ARCHITECTURE.md` §1, `design-system.html` and `ia.html` (the `integrity`
+attribute only); ADR-001, ADR-003, ADR-008, ADR-009, ADR-017, ADR-019, ADR-025, ADR-032, ADR-034;
+P-01, P-12, P-15, P-19, P-22.
+
+---
+
 ## Superseded
 
 ### S-1 · Dark-first adaptive tokens (2026-09-22) — superseded by ADR-006

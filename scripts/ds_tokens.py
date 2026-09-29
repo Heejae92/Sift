@@ -31,6 +31,7 @@ COLOR_FILE = DS_DIR / "DSColor.swift"
 LAYOUT_FILE = DS_DIR / "DSLayout.swift"
 MOTION_FILE = DS_DIR / "DSMotion.swift"
 HTML_FILE = ROOT / "design-system.html"
+SIM_FILE = ROOT / "simulator.html"
 UI_DOC = ROOT / "docs" / "knowledge" / "UI_DESIGN.md"
 BRAND_FILE = DS_DIR / "Brand.swift"
 
@@ -421,6 +422,9 @@ def cmd_lint() -> int:
     # 4. the generated CSS block in the HTML is current
     if html and css_block(tokens) not in html:
         problems.append("design-system.html's generated :root block is stale — re-run emit-css and paste it")
+    # 4b. the simulator carries a copy of the same block (ADR-035); a stale copy is the same defect
+    if SIM_FILE.exists() and css_block(tokens) not in SIM_FILE.read_text():
+        problems.append("simulator.html's generated :root block is stale — re-run emit-css and paste it")
 
     # 5. declaration-only tokens are printed every run, never silently tolerated
     for var, why in DECLARATION_ONLY.items():

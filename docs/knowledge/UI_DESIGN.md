@@ -1439,14 +1439,14 @@ is the only place external references are cited.
 
 - Google Photos — the iOS system dialog with the reason line and Select Photos / Allow All /
   Don't Allow. Source of: the wording pattern for the reason line.
-  [screenshot](https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/render/image/sign/screenshots/uploaded_google_photos/main_tabs/compare/2026-05-28/1779943488149_00_Google_Photos-20260528-044447-01.png?token=eyJraWQiOiI1NTU0MmU4OC1mNWRkLTQxMDEtOWZkYy0yODFiMzM3NmYyOTIiLCJhbGciOiJIUzI1NiJ9.eyJ0cmFuc2Zvcm1hdGlvbnMiOiJ3aWR0aDo3NjgscmVzaXplOmNvbnRhaW4scXVhbGl0eTo3MCIsInVybCI6InNjcmVlbnNob3RzL3VwbG9hZGVkX2dvb2dsZV9waG90b3MvbWFpbl90YWJzL2NvbXBhcmUvMjAyNi0wNS0yOC8xNzc5OTQzNDg4MTQ5XzAwX0dvb2dsZV9QaG90b3MtMjAyNjA1MjgtMDQ0NDQ3LTAxLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3OTAxMTc0MzMsImV4cCI6MTgyMTY1MzQzM30.HiUhKqOQqurg1SQ60IxyzPcJjOH9Sv6fJNe_Ziv_fSE)
+  screenshot in the Lazyweb library, retrieved 2026-09-22
 - Gio (Photo & Video) — the system prompt previewing a thumbnail grid and a count, with Limit
   Access / Allow Full Access / Don't Allow. Source of: showing the user the count of what they
   picked in the limited interstitial.
-  [screenshot](https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/render/image/sign/screenshots/uploaded_gio/compare/2026-02-10/1771028039306_t__-_19300.PNG?token=eyJraWQiOiI1NTU0MmU4OC1mNWRkLTQxMDEtOWZkYy0yODFiMzM3NmYyOTIiLCJhbGciOiJIUzI1NiJ9.eyJ0cmFuc2Zvcm1hdGlvbnMiOiJ3aWR0aDo3NjgscmVzaXplOmNvbnRhaW4scXVhbGl0eTo3MCIsInVybCI6InNjcmVlbnNob3RzL3VwbG9hZGVkX2dpby9jb21wYXJlLzIwMjYtMDItMTAvMTc3MTAyODAzOTMwNl90X18tXzE5MzAwLlBORyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3OTAxMTc0MTEsImV4cCI6MTgyMTY1MzQxMX0.cohEl-KQQo8DXPH7Hn43henpFUYgRfFj7mh5cKCz1NE)
+  screenshot in the Lazyweb library, retrieved 2026-09-22
 - FaceApp — the app's own explanation screen shown *before* the system dialog, with a Continue
   button. Source of: the two-step structure of this screen.
-  [screenshot](https://zlfyzdmohcskkucuunmk.supabase.co/storage/v1/render/image/sign/screenshots/photos2_faceapp/compare/2024-11-10-22-22-18-.png?token=eyJraWQiOiI1NTU0MmU4OC1mNWRkLTQxMDEtOWZkYy0yODFiMzM3NmYyOTIiLCJhbGciOiJIUzI1NiJ9.eyJ0cmFuc2Zvcm1hdGlvbnMiOiJ3aWR0aDo3NjgscmVzaXplOmNvbnRhaW4scXVhbGl0eTo3MCIsInVybCI6InNjcmVlbnNob3RzL3Bob3RvczJfZmFjZWFwcC9jb21wYXJlLzIwMjQtMTEtMTAtMjItMjItMTgtLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3OTAxMTc0MTIsImV4cCI6MTgyMTY1MzQxMn0.GFN3TADnOlXVV_Zo4BrXd3KYS7SlEjXsxqXVzh_wARM)
+  screenshot in the Lazyweb library, retrieved 2026-09-22
 
 ### 11.2 Review
 
