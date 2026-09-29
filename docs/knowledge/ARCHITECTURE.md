@@ -1,6 +1,6 @@
 # Sift · Architecture
 
-v1.4 · 2026-09-29 · English · companion to `IA.md` (what exists) and `UI_DESIGN.md` (what it looks like)
+v1.5 · 2026-09-29 · English · companion to `IA.md` (what exists) and `UI_DESIGN.md` (what it looks like)
 
 This file is the map of the code: which modules exist, what each one owns, how data moves, and
 what a change has to touch. Read it before adding a file; update it when you add one. Decisions
@@ -321,10 +321,16 @@ simulator (ADR-034).
   archives, favorites and trashes the seeded samples, so a second take starts from an unreviewed
   library (`docs/DEVELOPMENT.md` "Recording the demo").
 
-All three write to the library they run against, which on a device is someone's own photos, so each
-throws `XCTSkip("simulator only: writes to Photos")` from `setUpWithError` when it is not built for a
-simulator (`#if !targetEnvironment(simulator)`, ADR-035's correction of 2026-09-29). They hold no
-PhotoKit code, so the gate is at run time and a device test build still compiles them.
+All three change what they run on. The tour and the demo answer the photo-access dialog with Allow
+Full Access and archive and favorite through the app, which writes to Photos, and on a device that
+library is someone's own photos; the capture tool answers the built-in apps' permission alerts, which
+on a device belong to someone's own apps. So each calls `super.setUpWithError()` and then, when it is
+not built for a simulator (`#if !targetEnvironment(simulator)`, ADR-035's corrections of
+2026-09-29), throws an `XCTSkip` that says what it would change: "simulator only: grants photo
+access, archives and favorites in Photos" for the tour and the demo, "simulator only: answers other
+apps' permission alerts" for the capture tool. They hold no PhotoKit code, so a device test build
+still compiles them and the gate acts at run time, before their first step. `SampleSeedTests`, below,
+is gated at compile time instead.
 
 Their companion lives in `SiftTests`, because it needs the app's own Photos access rather than a UI:
 

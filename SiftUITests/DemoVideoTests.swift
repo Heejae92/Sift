@@ -38,11 +38,14 @@ final class DemoVideoTests: XCTestCase {
         }
     }
 
-    /// The run archives and favorites in the library it sifts, so it runs on a simulator only: on a
-    /// device that library is someone's own photos (ADR-027, ADR-033).
+    /// The run answers the photo-access dialog with Allow Full Access, and it archives into an album
+    /// and favorites in the library it sifts, so it runs on a simulator only: on a device that
+    /// library is someone's own photos (ADR-027, ADR-033). A device build still compiles it; the
+    /// skip is at run time, before the first step.
     nonisolated override func setUpWithError() throws {
+        try super.setUpWithError()
         #if !targetEnvironment(simulator)
-        throw XCTSkip("simulator only: writes to Photos")
+        throw XCTSkip("simulator only: grants photo access, archives and favorites in Photos")
         #endif
     }
 

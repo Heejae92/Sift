@@ -22,7 +22,7 @@ name lint from it. The app consumes those tokens and nothing else (P-12).
 | `Sift/Resources/` | The asset catalog, the four Pretendard cuts with their license (`Fonts/Pretendard-OFL.txt`), and six sample screenshots (real iOS screens captured with `SiftUITests/SampleCaptureTests`) used by the demo stack and as the simulator seed |
 | `Sift/PrivacyInfo.xcprivacy` | Privacy manifest: no tracking, no collection, no required-reason APIs |
 | `SiftTests/` | Swift Testing suites, with actor fakes for Photos (`FakePhotoLibrary`) and for the reminder (`FakeReminderScheduler`) and an in-memory store, plus the opt-in sample seed tool (`SampleSeedTests`) |
-| `SiftUITests/` | XCTest UI tests: the screenshot tour (`SiftTourTests`), the opt-in sample capture tool (`SampleCaptureTests`) and the opt-in demo run behind the video (`DemoVideoTests`). All three write to the library they run against, so each skips itself on a device (`XCTSkip`, "simulator only: writes to Photos") |
+| `SiftUITests/` | XCTest UI tests: the screenshot tour (`SiftTourTests`), the opt-in sample capture tool (`SampleCaptureTests`) and the opt-in demo run behind the video (`DemoVideoTests`). Each changes what it runs on: the tour and the demo grant photo access and archive and favorite in Photos, and the capture tool answers other apps' permission alerts. So each is built for a device too but skips itself there at run time (`XCTSkip`, with a message saying which of those it does) |
 | `docs/knowledge/ARCHITECTURE.md` | Stack, module map, data flow, the deck state machine, concurrency rules, build order |
 | `docs/knowledge/UI_DESIGN.md` | The design system: tokens, components, screens, the generated contrast table |
 | `docs/knowledge/IA.md` | The information architecture: objects, screens, navigation, routing, the queue lifecycle, persistence, external change. ADR-025, confirmed 2026-09-27; the 30-day rule, ADR-032, 2026-09-28; the reminder, ADR-034, 2026-09-29 |
@@ -30,7 +30,7 @@ name lint from it. The app consumes those tokens and nothing else (P-12).
 | `docs/knowledge/PRINCIPLES_CHECKLIST.md` | 27 lines for the 23 principles (P-19 gets four, P-15 gets two), plus a pre-ship list for a screen |
 | `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-035, plus the superseded decisions S-1 to S-4 |
 | `docs/superpowers/specs/2026-09-23-sift-design-system-design.md` | The design spec behind the design system |
-| `docs/references.md` | Reference boards, the format reference, three Lazyweb permission-screen links |
+| `docs/references.md` | Reference boards, the format reference, three Lazyweb permission-screen references, named without a link |
 | `docs/DEVELOPMENT.md` | This file: the file map, building, running on the simulator, recording the demo, the web simulator, the design-system commands and the notes that used to sit in the README |
 | `docs/demo/` | The demo video at the top of the README (`sift-demo.mp4`) and its poster (`sift-demo-poster.png`), made by `SiftUITests/DemoVideoTests` and `scripts/make-demo-video.swift` |
 | `docs/screenshots/` | The simulator frames shown at the top of the README, exported from the screenshot tour, downscaled with `sips --resampleWidth 480` and given a 3 px `#D1D1D6` border (`magick … -bordercolor '#D1D1D6' -border 3`). `3-all-done.png` comes from the reminder check of ADR-034 instead, with the status bar pinned to the tour's 2:26 (`simctl status_bar … override --time 2:26`) |
@@ -245,7 +245,9 @@ phone at the top, so a frame of the same proportions has no empty band. The READ
 which keeps the proportions at any width; a frame of other proportions leaves a margin at the sides
 or at the bottom, never at the top. Without it the phone stands at the top of the window, beside the
 title, the intro, the controls and the links on a window 800 px or wider, scaled to the window's
-height, and under a one-line title on a narrower one, scaled to its width.
+height, and under a one-line title on a narrower one, scaled to its width and to the height left
+under the title. The height alone never takes it below 60 % (`NARROW_MIN_SCALE`); on a window too
+short for that, the page scrolls instead.
 
 **Its token block.** The page carries a copy of the generated `:root` block and reads every swipe,
 stack and duration number from it. After a token change, paste the same `emit-css` output into
@@ -253,9 +255,11 @@ stack and duration number from it. After a token change, paste the same `emit-cs
 comments, and fails on either one when it is stale, or when the page is missing. What the generator
 does not emit is typed once in the page and named where it is typed: in its own `:root` block, the
 springs' stand-in durations, the phone (an iPhone 17 in points, with its safe areas), the look of the
-iOS imitations (`--os-*`) and the embedded size; in the script, the two product rules
-(`MINIMUM_AGE_DAYS`, `REMINDER_INTERVAL_DAYS`), the skip (`SKIP_DAYS`), how long the banner stays, the
-pointer arithmetic and the page's breakpoint.
+iOS imitations (`--os-*`), the page's column gap and text column (`--page-*`) and the embedded size;
+in the script, the two product rules (`MINIMUM_AGE_DAYS`, `REMINDER_INTERVAL_DAYS`), the skip
+(`SKIP_DAYS`), how long the banner stays, the pointer arithmetic and the smallest scale of the phone on
+a narrow window (`NARROW_MIN_SCALE`). The page's one breakpoint, 800 px, is typed once, in its one
+width query, which sets `--page-wide` for the script to read.
 
 **Its images.** The six samples, resampled, then stripped of every metadata block (`jpegtran` is in
 Homebrew's `jpeg-turbo`):
@@ -267,8 +271,9 @@ for i in 1 2 3 4 5 6; do
 done
 ```
 
-On 2026-09-29 that gave six 480 × 1043 images, 380 543 bytes together. The page asks for the three
-the demo shows as it opens and for the other three when the visitor heads for Review.
+On 2026-09-29 that gave six 480 × 1043 images, 380 543 bytes together. The page asks for all six as
+it opens, and for the four Pretendard weights it uses once the first screen is set, when the web font
+is what sets the text, so nothing a visitor does makes a request (ADR-035 has the request log).
 
 **Its policy names two jsDelivr addresses, not the host.** The page loads one stylesheet,
 Pretendard's, and not Adobe's kit: the app shows its display roles in Pretendard Bold until it has a
@@ -289,8 +294,9 @@ await new FontFace('probe', `url(${font})`).load();   // resolves: allowed · Ne
 **Checking it.** It has no tests of its own. Drive it by mouse; by keyboard alone (Tab, Enter,
 ← → ↑ and Z); at a phone's width with touch (the browser's device emulation); with Reduce Motion
 emulated in the developer tools (or on, in System Settings › Accessibility › Display); and in a
-frame, `?embed=1`. The console stays empty, and a policy violation would print there. After a change
-to a screen in the app, make the same change here (ADR-035).
+frame, `?embed=1`. The console stays empty, and a policy violation would print there. The network
+panel shows no request after the page has opened, whatever the visitor does. After a change to a
+screen in the app, make the same change here (ADR-035).
 
 ## Design-system commands
 

@@ -9,11 +9,15 @@ import XCTest
 ///     xcodebuild … -only-testing:SiftUITests/SampleCaptureTests TEST_RUNNER_SIFT_CAPTURE_SAMPLES=1 test
 @MainActor
 final class SampleCaptureTests: XCTestCase {
-    /// It answers the built-in apps' permission alerts, so it runs on a simulator only: on a device
-    /// it would grant Photos and other access in someone's own apps (ADR-027, ADR-033).
+    /// It answers the built-in apps' permission alerts, with an Allow button where there is one, so
+    /// it runs on a simulator only: on a device it would change the permissions of someone's own apps
+    /// (ADR-027, ADR-033).
+    /// It writes nothing to Photos; its captures are test attachments. A device build still
+    /// compiles it; the skip is at run time, before the first step.
     nonisolated override func setUpWithError() throws {
+        try super.setUpWithError()
         #if !targetEnvironment(simulator)
-        throw XCTSkip("simulator only: writes to Photos")
+        throw XCTSkip("simulator only: answers other apps' permission alerts")
         #endif
     }
 

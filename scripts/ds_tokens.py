@@ -429,7 +429,7 @@ def cmd_lint() -> int:
     if not sim:
         problems.append(f"missing {SIM_FILE.name}")
     elif css_block(tokens) not in sim:
-        problems.append("simulator.html's generated :root block is stale — re-run emit-css and paste it")
+        problems.append("simulator.html's generated :root block is stale; re-run emit-css and paste it")
 
     # 5. declaration-only tokens are printed every run, never silently tolerated
     for var, why in DECLARATION_ONLY.items():

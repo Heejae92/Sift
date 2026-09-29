@@ -24,7 +24,7 @@
 > discount every hit the same command reports for `'Sift/'`, plus the one path join named above. The
 > lint does not check any of this; it checks `DesignSystem/` only.
 
-v1.8 · 2026-09-29 · light-only · iOS 17 SwiftUI
+v1.9 · 2026-09-29 · light-only · iOS 17 SwiftUI
 
 The product is a screenshot triage app. It shows one screenshot at a time as a card, newest
 unreviewed first, with a progress counter. Swipe left sends it to the app's own Trash, right to a
@@ -107,7 +107,7 @@ every numeric token has a CSS variable in the guide and a `Enum.name` mention he
 name appears in no token file but `Brand.swift`; and the `:root` block pasted into the guide is
 byte-identical to the current `emit-css` output, as is the copy the simulator carries
 (`simulator.html`, ADR-035), which fails the lint when it is stale or missing. Usage is counted by exact variable name and only
-outside HTML comments, so a token named in a comment does not count as consumed. Three tokens the
+outside HTML comments, so a token named in a comment does not count as consumed. Ten tokens the
 guide declares but cannot consume are printed as `EXCEPTION` lines on every run and are listed in
 [§14](#14-token-index); `lint` also prints a `WARNING` while `DSIconCredits.entries` is still empty.
 The script's module docstring now states all of this, the `EXCEPTION` and `WARNING` lines included,
@@ -1433,8 +1433,9 @@ On tap the app calls `requestAuthorization(for: .readWrite)`. Three outcomes:
 The denied state re-checks authorization whenever `scenePhase` becomes `.active`, so a user who
 changes the setting and comes back lands in Review without tapping anything.
 
-**References.** Three screenshots from the Lazyweb library informed this screen (`docs/references.md`;
-signed URLs, valid about a year from 2026-09-22). A search for swipe-to-triage card decks and photo
+**References.** Three screenshots from the Lazyweb library informed this screen (`docs/references.md`,
+which names them without a link; the signed links retrieved with them on 2026-09-22 were removed
+from it and from this section on 2026-09-29, ADR-035). A search for swipe-to-triage card decks and photo
 cleaners returned nothing usable — the library's coverage there is weak — so the permission screen
 is the only place external references are cited.
 
@@ -1886,7 +1887,7 @@ side applies `deg` or `ms` at the point of use. Everything that *is* a length ca
 
 ### Declared but not consumed
 
-Three generated variables are declared in the guide's `:root` block and never read by any rule in
+Ten generated variables are declared in the guide's `:root` block and never read by any rule in
 it. `ds_tokens.py lint` counts usage by exact variable name, outside HTML comments, and prints an
 `EXCEPTION` line for each of these on every run rather than tolerating it silently. Any other unused
 variable is a lint failure, not an exception.
@@ -1896,6 +1897,13 @@ variable is a lint failure, not an exception.
 | `--grid-breakpoint` | `DSGrid.breakpoint` | CSS media queries cannot take `var()`; the guide's twelve `max-width` queries spell `1199.98px` literally |
 | `--motion-dur3` | `DSMotion.dur3` | surface transitions (sheet, card expand); the guide has no animated sheet |
 | `--motion-toast-visible` | `DSMotion.toastVisible` | the toast demo is a static swatch, so nothing counts down 2.5 s |
+| `--motion-confetti` | `DSMotion.confetti` | the all-done celebration is not drawn in the guide; the deck demo shows the copy, not the burst |
+| `--motion-stagger` | `DSMotion.stagger` | the guide has no emptying grid; the thumbnail swatches are static |
+| `--size-viewer-zoom-double-tap` | `DSSize.viewerZoomDoubleTap` | the guide has no working viewer; its viewer mini is a static swatch |
+| `--size-viewer-zoom-max` | `DSSize.viewerZoomMax` | same: nothing in the guide pinches |
+| `--motion-demo-card` | `DSMotion.demoCard` | the guide's deck demo is driven by the visitor, not by a loop |
+| `--motion-demo-pause` | `DSMotion.demoPause` | same: no auto-loop in the guide |
+| `--size-block-face-share` | `DSSize.blockFaceShare` | the guide's block tiles are swatches, not screens; the app gives the face the top half |
 
 The reason strings above are quoted from `DECLARATION_ONLY` in `scripts/ds_tokens.py`, so they are
 what a `lint` run prints, with one em-dash rewritten as a semicolon because this document keeps
@@ -2007,3 +2015,4 @@ the expressive palette to serve as blocks, `onboarding` on `trash.main` and `lim
 | v1.6 | 2026-09-28 | ADR-033 in §11.1 and §12: when some picked screenshots are unreviewed and under 30 days old, the limited-access block adds one line saying they wait and how many are ready now, or the day the first one is ("It's ready" when only one waits); the CTA counts the ready ones, or reads "Continue" when none is ready. When nothing picked is a screenshot, the block says so, "Pick more" takes the fill and "Continue" is the text action. §12 records the two "Continue" labels as the exception to "Verbs first". §11.1's footer row to Credits, stale since ADR-031, is replaced by a note that there is none. |
 | v1.7 | 2026-09-29 | ADR-034 in §7, §10, §11.2, §12 and §15: the all-done block carries the cleanup reminder. Its bare-text action reads "Remind me every 30 days" while the reminder is off and "Turn on reminders in Settings" once it is denied, which opens the app's notification settings; denied covers notifications declined and notifications allowed with alerts, the lock screen and Notification Center all off. There is no reminder action while it is on, and "Open Trash (N)" stays the one filled action. While the reminder is on, "Next reminder: Nov 28." takes the place of the "Next screenshot" line. VoiceOver hears the outcome of "Remind me". §12 adds the notification's title and body and the two announcements; §7 records `DSHaptic.permissionGranted` for the reminder and that the notification's sound is iOS's, which leaves ADR-012 standing; §15 item 11 lists the reminder's details as awaiting the owner. |
 | v1.8 | 2026-09-29 | ADR-035. §0: `emit-css` output is pasted into `simulator.html` as well as the guide, and `lint` fails when that copy is stale or missing. §11.1: the three Lazyweb references are named rather than linked, from the repository audit of the same day. |
+| v1.9 | 2026-09-29 | Counts checked against a `lint` run, from ADR-035's second review. §0 and §14: `lint` prints ten `EXCEPTION` lines, not three; §14's table had listed only the first three and now lists all ten, with the reasons `DECLARATION_ONLY` gives. §11.1: the references paragraph no longer calls the links signed URLs valid for a year, since neither it nor `docs/references.md` carries them any more. |

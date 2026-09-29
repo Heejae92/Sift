@@ -1298,7 +1298,7 @@ screenshots, the flag can go.
 **Correction, 2026-09-28.** The Decision above says the flag "is read under `#if DEBUG` only, so a
 release build ignores it and there is nothing in the UI to find". A release build does ignore it,
 but DEBUG alone was the wrong gate. Since the `Sift` scheme began passing `-SiftAllImages` on every
-Run (commit `5786c73`, after this entry was written), a Debug run from Xcode on an iPhone would
+Run (commit `b554ed0`, after this entry was written), a Debug run from Xcode on an iPhone would
 review every photo in the library, not only its screenshots, on a device, which this entry names as
 the acceptance path. The flag is now read under `#if DEBUG && targetEnvironment(simulator)`, so a
 release build and every build for a device ignore it. The scheme keeps passing it, and ADR-032's
@@ -1821,15 +1821,18 @@ and a tap on it opens Review, as the launch routing would (`IA.md` §4). iOS sho
 the app is open; the page has nothing else to show it over. A page cannot open Settings, so "Open
 Settings" on the denied block and "Turn on reminders in Settings" raise the iOS prompt again in its
 place, and the prompt's caption says what the app would do. Each imitated dialog says it is one, in
-a caption that reads "Imitation of an iOS dialog" where the entry had "Simulated iOS dialog"; the
-banner carries no caption, and the line beside the phone names both. All are drawn in the iOS 26
-look of the frames and the video.
+a caption that reads "Imitation of an iOS dialog" where the entry had "Simulated iOS dialog", and so
+does the banner, in a line under its body that reads "Imitation of an iOS notification". A screen
+reader hears the dialog's caption before its message, and the banner's at the start of its name and
+of its announcement; the line beside the phone names both. All are drawn in the iOS 26 look of the
+frames and the video.
 
 *The page.* *On the page* says the frame is "no taller than 92 % of the visitor's window". The page
 now puts the phone at the top of the window in every layout. On a window 800 px or wider the phone
 stands beside a one-line title, the intro, the two controls and the links, scaled to the window's
 height, so a 1440 × 900 window shows all of it; on a narrower one it stands under the title, scaled
-to the width. The address `simulator.html?embed=1`, read as yes or no and for nothing else, shows the
+to the width and to the height left under the title, though the height alone never takes it below
+60 %. The address `simulator.html?embed=1`, read as yes or no and for nothing else, shows the
 phone and its controls alone, drawn at 426 × 980 and scaled whole to the frame, so a frame of the
 same proportions shows no empty band; the project page's frame is 384 × 884 and keeps those
 proportions at any width through `aspect-ratio`. Every load, a reload, a page brought back from the
@@ -1849,10 +1852,10 @@ slides in and out as an iOS push does, over `--motion-dur3`, where the list of w
 has "the push between screens, which cross-fade here"; under Reduce Motion it still cross-fades. The
 rewind glyph is a U-turn arrow, the shape the app shows, where the guide draws a circular one; the
 other glyphs are still the guide's. The six images are 480 px JPEG from `sips` at quality 80 with
-every metadata block removed (`jpegtran -copy none`), 381 KB together. Where *Security* says the
-script "asks for the page's own six images, all six as the page opens", it now asks for the three
-that the demo and the first cards show as the page opens and for the other three when the visitor
-heads for Review, all from the page's own origin.
+every metadata block removed (`jpegtran -copy none`), 381 KB together. What *Security* says of
+them holds: the script asks for all six as the page opens, from the page's own origin, and where the
+web font sets the text it asks for the four Pretendard weights the page uses as it opens too, so no
+request follows from what a visitor does (the third correction has the request log).
 
 *Checked* on 2026-09-29 in Chrome driven by Playwright: every screen by mouse and by keyboard alone;
 at 390 × 844 with touch events, the swipes, a commit on velocity and the page scrolling under a
@@ -1864,18 +1867,125 @@ long-press menus; haptics; an external change in Photos; a deletion that fails i
 
 **Correction, 2026-09-29 (the UI tests, from the same audit).** *Security* records two low findings
 from the check before the push. The repository audit that followed found a third. `SiftTourTests`,
-`SampleCaptureTests` and `DemoVideoTests` write to what they run against: the tour and the demo run
-trash, archive and favorite through the app, and the capture tool answers the built-in apps'
-permission alerts. Only an environment variable kept two of them off a device, and nothing kept the
-tour off one, where the library is someone's own photos. Each now throws
-`XCTSkip("simulator only: writes to Photos")` from `setUpWithError` when it is not built for a
-simulator (`#if !targetEnvironment(simulator)`), the gate `SampleSeedTests` has at compile time
-(ADR-033). `build-for-testing` passes for a simulator and for a generic iOS device.
+`SampleCaptureTests` and `DemoVideoTests` change what they run on: the tour and the demo answer the
+photo-access dialog with Allow Full Access and archive and favorite through the app, which writes to
+Photos, and the capture tool answers the built-in apps' permission alerts, with an Allow button where
+there is one. Only an environment variable kept two of them off a device, and nothing kept the tour
+off one, where the library is someone's own photos. Each now calls `super.setUpWithError()` and then,
+when it is not built for a simulator (`#if !targetEnvironment(simulator)`), throws an `XCTSkip` that
+says what it would change: "simulator only: grants photo access, archives and favorites in Photos"
+for the tour and the demo, "simulator only: answers other apps' permission alerts" for the capture
+tool. The condition is the one `SampleSeedTests` uses (ADR-033), but the gate is of another kind.
+`SampleSeedTests` is left out of a device build at compile time, so a device never has it. The three
+UI tests hold no PhotoKit code and compile into a device build as well; the gate acts at run time,
+before their first step, and XCTest reports them as skipped. `build-for-testing` passes for a
+simulator and for a generic iOS device.
+
+**Correction, 2026-09-29 (a second review of the rebuilt page).** Two reviewers read the rebuilt page
+against the entry and its first two corrections, and the page was changed where they found faults.
+What the entry itself says wrongly is corrected here. Where this round's changes made a sentence of
+the first two corrections stale, the sentence was brought up to date in place: the banner's caption
+(*The reminder*), the narrow layout (*The page*), how the images load (*Smaller changes*) and the UI
+tests' messages and gate (the second correction). The wording they had when they were published is
+in commit `ad87ddc`. From here on a correction is a new dated paragraph and an earlier one is left
+as it stands.
+
+*Signed links.* *Security* says the three signed Lazyweb links "are left as they are until the owner
+decides whether to cite the references without a link". They were not left: `738a4ba`, the commit
+that published the simulator, replaced each of them in `UI_DESIGN.md` §11.1 and
+`docs/references.md` with a line that names the screenshot without a link. They remain in the public
+commits before that one, and valid until they expire on 2027-09-22.
+
+*The badge.* *Consequences* says the badge's place disagrees with "the comment in
+`ReviewScreen.swift`". No comment there describes the corner; the code names it.
+`ReviewHeader.chromeButton` lays the badge over the glyph with `.overlay(alignment: .topTrailing)`,
+and `badge` moves its own top and trailing alignment guides to its centre (`ReviewScreen.swift`,
+lines 224 to 249). The disagreement is between that code and the frame `2-review.png`, which shows
+the badge over the glyph, centred, top to top. The simulator still follows the frame.
+
+*Input.* *Security* says "the page takes no input". It takes one: the address's `embed` parameter,
+read as yes when it is exactly `1` and as no otherwise. It chooses the layout and is never written
+into the page.
+
+*Requests.* *Security* says the script asks for all six images as the page opens, "so that no request
+depends on what a visitor does". The rebuild had made that false by asking for three of them only
+when the visitor headed for Review. The page asks for all six as it opens again, and for the four
+Pretendard weights it uses (400, 500, 600 and 700) as soon as its first screen is set in the web
+font. A visitor whose own copy of Pretendard Variable sets the text, since the font stack names it
+first, is asked for no font at all. Checked in Chrome with a log of every request from the load
+through a whole visit (the demo taken over by a drag, both photo-access answers and "Not now", every
+verdict by key, button and drag, rewind, the reminder allowed, "Skip 30 days" and the banner, a
+restore, a cancelled and a confirmed deletion, Library, Credits, "Start over"), on the page and at
+`?embed=1` in a 384 × 884 window. As for a visitor without Pretendard: 12 requests as the page opens
+(the page, the stylesheet, four fonts of 3.1 MB together and six images) and none after. This Mac has
+Pretendard installed, so that case ran on a test copy of the page with "Pretendard Variable" taken
+out of its font stack and its `integrity` removed, and on the stylesheet with its `local()` sources
+taken out. As on the owner's Mac, with Pretendard Variable installed: 8 as the page opens and none
+after. The page as committed before this round made 3 more during the same visit, one for each of
+the last three images.
+
+*Referrer.* *Security* ends "The page sends no referrer". Its own requests carry no `Referer`; the
+font requests carry the stylesheet's own address on jsDelivr, which says nothing of the page.
+jsDelivr still learns where a visit comes from: the stylesheet and the fonts are fetched in CORS mode,
+and each of those requests carries an `Origin` header with the page's origin,
+`https://heejae92.github.io`. Like any server, it also sees the visitor's IP address and user agent.
+
+*Icons.* *Screens* says "The icons are the guide's own drawings", and the first correction that, the
+rewind glyph apart, "the other glyphs are still the guide's". One more is not: the app icon on the
+imitated banner (`i-app`) is a new drawing, made for the page, since the guide draws no app icon.
+
+*Contrast.* The imitated dialogs drew their message in iOS's secondary grey at 62 % opacity and their
+caption at 11 px in the same grey. Against what lay behind them, both measured 3.0 to 3.4:1, and the
+banner's "now" 3.5:1. The message and the banner's two small lines are now a solid `rgb(60 60 67)`,
+and the dialog's caption, which is the page's own words and not iOS's, solid black at 13 px.
+Measured in Chrome at twice the scale, with each text made transparent and every pixel of its box
+taken as its background, the lowest ratios are: the message 7.48:1 over the denied block, 7.65:1
+over onboarding, 8.10:1 over a filled Trash and 9.29:1 over the all-done block; the dialog's caption
+13.18:1; the banner's "now" 9.69:1 and its caption 10.38:1. One label is still short: the
+destructive button's red, iOS's `#ff3b30`, measures 2.37:1 on its button in the delete dialog. It
+is iOS's own colour, and it is left for the owner to decide.
+
+*Other fixes.* A verdict that lands while Trash or Library is open shows there at once: the header's
+buttons stay open while a card is in flight, as `ReviewHeader`'s do, and the app's screens read the
+catalog as it changes. After the last thumbnail in Trash is deleted from the viewer, focus lands on
+"Keep sifting" and not on the screen. The banner stays while it is pointed at or has focus, either
+one, and leaves a few seconds after both have gone. A toast leaves with the screen it was raised on.
+The card in flight is hidden from assistive technology, as `CardStack` hides a card with an exit
+under way. The page's title is "Sift simulator", the intro was reworded, and the link to the project
+page opens in the whole window when the page is framed. On a narrow window the phone is also held to
+the height left under the title, which puts Review's verdict row above the fold at 360 × 640 (it
+ended at 699 px of 640) and the whole phone inside a 799 × 900 window (it ended at 947 px of 900).
+
+*Commit hashes.* Commit hashes written in these documents before 2026-09-29 15:36 PDT were replaced.
+That afternoon the repository's history was rewritten so that every commit carries the owner's
+private GitHub address, which changed every hash and nothing in any commit's content. The one such
+hash, in ADR-027's correction, now reads `b554ed0`; the hashes this entry names are the rewritten
+ones. The replaced hashes are not written down here on purpose: until GitHub collects the old
+commits, each of them still opens a copy that carries the address the rewrite removed.
+
+*Open, and left on purpose.* Two changes were weighed and not made. Serving the four font weights
+from the page's own origin, or a subset of them, would take jsDelivr out of a visit and cut the
+3.1 MB that a first visit downloads when Pretendard is not installed, at the cost of fonts to keep
+current in the repository or a step to subset them. Hashes of the page's scripts in the policy, in
+place of `'unsafe-inline'`, would have to be recomputed on every edit of a one-file page. Both stay
+open.
+
+*Checked* on 2026-09-29 in Chrome driven by Playwright, against the page as committed and as
+changed: each fault above shown on the first and gone on the second (focus after the last deletion
+from the viewer, by keyboard and by mouse; Trash and Library opened while a card was in flight; the
+banner held by focus after the pointer left and by the pointer after focus left; the toast on
+leaving Trash; the card in flight); the request log and the contrast above; every screen by mouse
+and by keyboard alone; touch at 390 × 844; Reduce Motion by emulation; the frame at 384 × 884 and
+358 × 824, where the phone still starts at the top and nothing scrolls; the window sizes above, and
+800 × 900, 1440 × 900, 1440 × 790 and 1920 × 1080, where nothing moved. `lint`, `contrast` and
+`scripts/typecheck-ds.sh` pass, and `build-for-testing` passes for a simulator and for a generic iOS
+device. Still not checked: Safari, Firefox, a phone in the hand, a screen reader.
 
 **Applies to** `simulator.html`, `docs/simulator/`, `README.md`, `scripts/ds_tokens.py` (`lint`),
-`docs/DEVELOPMENT.md`, `ARCHITECTURE.md` §1, `design-system.html` and `ia.html` (the `integrity`
-attribute only); ADR-001, ADR-003, ADR-008, ADR-009, ADR-017, ADR-019, ADR-025, ADR-032, ADR-034;
-P-01, P-12, P-15, P-19, P-22.
+`docs/DEVELOPMENT.md`, `docs/references.md`, `ARCHITECTURE.md` §1 and §9, `UI_DESIGN.md` §0, §11.1
+and §14, `SiftUITests/` (the three gates), `design-system.html` and `ia.html` (the `integrity`
+attribute only); ADR-001, ADR-003, ADR-008, ADR-009, ADR-017, ADR-019, ADR-025, ADR-027 (a commit
+hash), ADR-032, ADR-033, ADR-034; P-01, P-12, P-15, P-19, P-22.
 
 ---
 

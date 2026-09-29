@@ -12,7 +12,7 @@
      innerHTML-style write fail instead of run. frame-ancestors cannot be set from a meta tag. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css; font-src https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/; base-uri 'none'; form-action 'none'; require-trusted-types-for 'script'" />
 <meta name="referrer" content="no-referrer" />
-<title>Sift — Simulator</title>
+<title>Sift simulator</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 <!-- integrity pins the bytes of this file: if they ever change, the browser refuses the sheet and
@@ -184,14 +184,39 @@
   --device-navbar: 44px;
   --os-font: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, sans-serif;
   --os-ink: #000000;
-  --os-ink-2: rgb(60 60 67 / 0.62);
+  /* iOS draws its secondary text at 60 % opacity; here it is solid, so that it clears 4.5:1 on the
+     glass over every block the dialogs open on (measured in ADR-035's third correction) */
+  --os-ink-2: rgb(60 60 67);
   --os-glass: rgb(255 255 255 / 0.74);
+  --os-blur: blur(24px) saturate(1.8);
   --os-fill: rgb(120 120 128 / 0.16);
   --os-dim: rgb(0 0 0 / 0.22);
   --os-destructive: #ff3b30;
   --os-grabber: rgb(60 60 67 / 0.3);
+  --os-statusbar: 600 17px/1 var(--os-font);
+  --os-title: 600 17px/1.3 var(--os-font);
+  --os-body: 400 15px/1.35 var(--os-font);
+  --os-body-strong: 600 15px/1.35 var(--os-font);
+  --os-button: 500 17px/1.2 var(--os-font);
+  --os-note: 400 13px/1.3 var(--os-font);
   --os-alert-radius: 34px;
+  --os-alert-margin: 40px;
+  --os-alert-shadow: 0 18px 50px rgb(0 0 0 / 0.22);
+  --os-button-height: 48px;
+  --os-app-icon: 60px;
+  --os-app-icon-radius: 14px;
+  --os-banner-top: 56px;
   --os-banner-radius: 24px;
+  --os-banner-icon: 38px;
+  --os-banner-icon-radius: 9px;
+  --os-banner-shadow: 0 8px 30px rgb(0 0 0 / 0.18);
+
+  /* The page around the phone, not the app: the column gap and the text column beside the phone.
+     --page-wide is 1 on a window at least as wide as the one breakpoint below, which the script reads. */
+  --page-gap: 40px;
+  --page-panel-min: 260px;
+  --page-panel-max: 340px;
+  --page-wide: 0;
 
   /* The embedded page (?embed=1) is the phone and the controls under it, drawn at this size and
      scaled whole to its frame; README.md's iframe keeps the same proportions */
@@ -245,12 +270,13 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
 .controls__meta kbd { font: var(--t-btn-cap); color: var(--color-ink); background: var(--color-surface-raised); border-radius: var(--radius-xs); padding: 1px 5px; }
 
 @media (min-width: 800px) {
+  :root { --page-wide: 1; }
   .page {
-    grid-template-columns: auto minmax(260px, 340px);
+    grid-template-columns: auto minmax(var(--page-panel-min), var(--page-panel-max));
     grid-template-rows: auto auto auto 1fr;
     grid-template-areas: "phone head" "phone intro" "phone controls" "phone about";
     justify-content: center; justify-items: start; align-items: start;
-    column-gap: 40px; row-gap: var(--space-s5);
+    column-gap: var(--page-gap); row-gap: var(--space-s5);
     padding: var(--space-s5);
   }
   .page__title { font: var(--t-headline); letter-spacing: 0.03em; }
@@ -291,7 +317,7 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
 .statusbar {
   position: absolute; z-index: 40; inset: 0 0 auto 0; height: var(--device-safe-top);
   display: flex; align-items: center; justify-content: space-between; padding: 12px 36px 0 52px;
-  color: var(--chrome); font: 600 17px/1 var(--os-font); letter-spacing: 0; pointer-events: none;
+  color: var(--chrome); font: var(--os-statusbar); letter-spacing: 0; pointer-events: none;
   transition: color var(--motion-fade) linear, opacity var(--motion-fade) linear;
 }
 .screen[data-statusbar="hidden"] .statusbar { opacity: 0; }
@@ -494,45 +520,47 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
 .sheet__actions { display: flex; flex-direction: column; gap: var(--space-s3); }
 
 /* ---- Imitations of the iOS surfaces the app presents but does not design (IA §9) ---- */
-.os-scrim { position: absolute; z-index: 60; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 40px; background: var(--os-dim); animation: fade-in var(--motion-fade) linear; }
+.os-scrim { position: absolute; z-index: 60; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 var(--os-alert-margin); background: var(--os-dim); animation: fade-in var(--motion-fade) linear; }
 .os-alert {
   --ring: var(--color-focus);
   width: 100%; max-height: calc(100% - var(--device-safe-top) - var(--device-safe-bottom)); overflow-y: auto;
   padding: 26px 16px 14px; border-radius: var(--os-alert-radius); background: var(--os-glass);
-  -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8);
-  box-shadow: 0 18px 50px rgb(0 0 0 / 0.22); color: var(--os-ink); font-family: var(--os-font); letter-spacing: 0;
+  -webkit-backdrop-filter: var(--os-blur); backdrop-filter: var(--os-blur);
+  box-shadow: var(--os-alert-shadow); color: var(--os-ink); font-family: var(--os-font); letter-spacing: 0;
   animation: alert-in var(--motion-dur2) var(--ease-out);
 }
 @keyframes alert-in { from { opacity: 0; transform: scale(1.08); } }
-.os-alert__icon { width: 60px; height: 60px; margin: 0 0 14px 14px; display: grid; place-items: center; border-radius: 14px; background: var(--color-surface); color: var(--color-ink); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); }
+.os-alert__icon { width: var(--os-app-icon); height: var(--os-app-icon); margin: 0 0 14px 14px; display: grid; place-items: center; border-radius: var(--os-app-icon-radius); background: var(--color-surface); color: var(--color-ink); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); }
 .os-alert__icon .icon { width: 34px; height: 34px; }
-.os-alert__title { padding: 0 14px; font: 600 17px/1.3 var(--os-font); }
-.os-alert__message { padding: 4px 14px 0; font: 400 15px/1.35 var(--os-font); color: var(--os-ink-2); }
+.os-alert__title { padding: 0 14px; font: var(--os-title); }
+.os-alert__message { padding: 4px 14px 0; font: var(--os-body); color: var(--os-ink-2); }
 .os-alert__photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; height: 66px; margin: 16px 0 12px; border-radius: 20px; overflow: hidden; }
 .os-alert__photos img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
-.os-alert__count { padding: 0 8px; font: 600 15px/1.35 var(--os-font); }
-.os-alert__fine { padding: 2px 8px 0; font: 400 15px/1.35 var(--os-font); }
+.os-alert__count { padding: 0 8px; font: var(--os-body-strong); }
+.os-alert__fine { padding: 2px 8px 0; font: var(--os-body); }
 .os-alert__buttons { display: flex; gap: 10px; margin-top: 20px; }
 .os-alert__buttons.is-stacked { flex-direction: column; }
-.os-alert__btn { flex: 1; min-height: 48px; padding: 0 12px; border-radius: var(--radius-pill); background: var(--os-fill); color: var(--os-ink); font: 500 17px/1.2 var(--os-font); letter-spacing: 0; }
+.os-alert__btn { flex: 1; min-height: var(--os-button-height); padding: 0 12px; border-radius: var(--radius-pill); background: var(--os-fill); color: var(--os-ink); font: var(--os-button); letter-spacing: 0; }
 .os-alert__btn.is-destructive { color: var(--os-destructive); font-weight: 600; }
-.os-alert__note { margin-top: 12px; font: 400 11px/1.3 var(--os-font); color: var(--os-ink-2); text-align: center; }
+/* The page's own disclosure, not iOS's: solid ink, at a size that stays legible in the scaled frame */
+.os-alert__note { margin-top: 12px; font: var(--os-note); color: var(--os-ink); text-align: center; }
 .banner {
   --ring: var(--color-focus);
-  position: absolute; z-index: 70; top: 56px; left: 10px; right: 10px; display: flex; gap: 10px; align-items: flex-start;
+  position: absolute; z-index: 70; top: var(--os-banner-top); left: 10px; right: 10px; display: flex; gap: 10px; align-items: flex-start;
   padding: 12px 14px; border-radius: var(--os-banner-radius); background: var(--os-glass);
-  -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8);
-  box-shadow: 0 8px 30px rgb(0 0 0 / 0.18); color: var(--os-ink); font-family: var(--os-font); letter-spacing: 0; text-align: left;
+  -webkit-backdrop-filter: var(--os-blur); backdrop-filter: var(--os-blur);
+  box-shadow: var(--os-banner-shadow); color: var(--os-ink); font-family: var(--os-font); letter-spacing: 0; text-align: left;
   animation: banner-in var(--motion-dur3) var(--ease-out);
 }
 @keyframes banner-in { from { transform: translateY(-140%); } }
-.banner__icon { flex: none; width: 38px; height: 38px; border-radius: 9px; background: var(--color-surface); box-shadow: inset 0 0 0 0.5px var(--os-grabber); display: grid; place-items: center; color: var(--os-grabber); }
+.banner__icon { flex: none; width: var(--os-banner-icon); height: var(--os-banner-icon); border-radius: var(--os-banner-icon-radius); background: var(--color-surface); box-shadow: inset 0 0 0 0.5px var(--os-grabber); display: grid; place-items: center; color: var(--os-grabber); }
 .banner__icon svg { width: 30px; height: 30px; }
 .banner__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .banner__head { display: flex; justify-content: space-between; gap: 8px; }
-.banner__title { font: 600 15px/1.3 var(--os-font); }
-.banner__time { font: 400 13px/1.5 var(--os-font); color: var(--os-ink-2); }
-.banner__body { font: 400 15px/1.3 var(--os-font); }
+.banner__title { font: var(--os-body-strong); }
+.banner__time { font: var(--os-note); color: var(--os-ink-2); }
+.banner__body { font: var(--os-body); }
+.banner__note { margin-top: 4px; font: var(--os-note); color: var(--os-ink-2); }
 
 /* ---- Toast: it belongs to the screen that posted it, so the viewer and the dialogs cover it ---- */
 .toast { position: absolute; z-index: 20; top: calc(var(--device-safe-top) + var(--device-navbar) + var(--space-s2)); left: var(--grid-mobile-margin); right: var(--grid-mobile-margin); display: flex; justify-content: center; pointer-events: none; animation: toast-in var(--motion-dur3) var(--ease-out); }
@@ -576,7 +604,7 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
   <header class="page__head">
     <h1 class="page__title">Sift simulator</h1>
   </header>
-  <p class="page__intro">Sift is an iPhone app for clearing out old screenshots, one swipe at a time. This page runs it in your browser with sample screenshots. Swipe the cards with a mouse or a finger, or use the arrow keys.</p>
+  <p class="page__intro">Sift is an iPhone app for cleaning up old screenshots with a simple swipe. This page runs it in your browser with sample screenshots. Swipe the cards with a mouse or a finger, or use the arrow keys.</p>
 
   <div class="stage" id="stage">
     <div class="phone" id="phone">
@@ -729,7 +757,7 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
 
         <!-- An imitation of an iOS dialog: photo access, notifications, or deletion -->
         <div class="os-scrim" id="alert" hidden>
-          <div class="os-alert" role="alertdialog" aria-modal="true" aria-labelledby="alert-title" aria-describedby="alert-message">
+          <div class="os-alert" role="alertdialog" aria-modal="true" aria-labelledby="alert-title" aria-describedby="alert-note alert-message">
             <div class="os-alert__icon" id="alert-icon" aria-hidden="true" hidden><svg class="icon"><use href="#i-photos"/></svg></div>
             <h2 class="os-alert__title" id="alert-title" tabindex="-1"></h2>
             <p class="os-alert__message" id="alert-message"></p>
@@ -745,10 +773,12 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
 
         <!-- An imitation of the reminder's notification banner (ADR-034) -->
         <button class="banner" id="banner" type="button" hidden>
+          <span class="sr-only">Imitation of an iOS notification. </span>
           <span class="banner__icon" aria-hidden="true"><svg><use href="#i-app"/></svg></span>
           <span class="banner__text">
             <span class="banner__head"><span class="banner__title">Time to sift</span><span class="banner__time" aria-hidden="true">now</span></span>
-            <span class="banner__body" id="banner-body">See which screenshots are over 30 days old. One swipe each.</span>
+            <span class="banner__body">See which screenshots are over 30 days old. One swipe each.</span>
+            <span class="banner__note" aria-hidden="true">Imitation of an iOS notification</span>
           </span>
         </button>
 
@@ -768,7 +798,7 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
 
   <section class="about" aria-label="About this page">
     <p class="about__note">The iOS dialogs and the notification here are imitations, and nothing on this page touches your photos: the screenshots are six samples, and nothing you do is stored or sent.</p>
-    <p class="about__links"><a href="https://heejae92.github.io/Sift/" rel="noopener noreferrer">Project page</a><a href="https://github.com/Heejae92/Sift" target="_blank" rel="noopener noreferrer">Source code on GitHub</a></p>
+    <p class="about__links"><a href="https://heejae92.github.io/Sift/" target="_top" rel="noopener noreferrer">Project page</a><a href="https://github.com/Heejae92/Sift" target="_blank" rel="noopener noreferrer">Source code on GitHub</a></p>
   </section>
 
   <div class="sr-only" id="announce" aria-live="polite"></div>
@@ -842,10 +872,10 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
   var VELOCITY_MAX_AGE = 80;        // ms: a finger that has stopped this long has no velocity
   var DRAG_MINIMUM_DISTANCE = 10;   // pt: DragGesture's default, which SwiftUI applies and the app never types
   var BANNER_SECONDS = 6;           // about as long as iOS keeps a banner up; held while pointed at or focused
-  // The page around the phone (not the app's layout): its breakpoint, gap and the narrowest text column
-  var WIDE_PAGE = 800;
-  var PAGE_GAP = 40;
-  var PANEL_MIN = 260;
+  // The page around the phone, not the app: on a narrow window the phone is also held to the height
+  // left under the title, but the height alone never draws it smaller than this; a window too short
+  // for that scrolls instead
+  var NARROW_MIN_SCALE = 0.6;
 
   // Transitions, each named for the DSMotion value it stands for
   var SETTLE = 'transform var(--motion-snap-back) var(--ease-snap)';       // stackSettle = snapBack
@@ -938,7 +968,6 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
     { id: 'recent-3', file: 'sample-6', bytes: 154745, age: 12, hour: 19, minute: 30 }    // a calendar
   ];
   var SAMPLE_PIXELS = { width: 1206, height: 2622 };
-  var FIRST_FILES = ['sample-1', 'sample-2', 'sample-3'];   // the demo and the first cards
   function src(file) { return 'docs/simulator/' + file + '.jpg'; }
 
   var shots = [];
@@ -953,8 +982,9 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
     shots.forEach(function (shot) { shotById[shot.id] = shot; });
   }
 
-  // Lazy where it helps: the three the demo and the first cards show are asked for as the page opens;
-  // the other three once the visitor heads for Review
+  // All six images are asked for as the page opens (warmAll, at the end), and every font weight the
+  // page uses too (loadFonts, once the first screen is set), so that no request follows from
+  // anything a visitor does
   var warmed = {};
   function warm(files) {
     files.forEach(function (file) {
@@ -965,6 +995,20 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
     });
   }
   function warmAll() { warm(SAMPLES.map(function (sample) { return sample.file; })); }
+  // The four Pretendard weights of the type roles (400 body, 500 caption, 600 small label, 700 bold
+  // roles). The first screen uses all four anyway; asking for them here keeps it so if it changes.
+  // Only when the web font sets the text: where the visitor's own Pretendard Variable does, which
+  // the stack names first, none of them is needed and none is asked for.
+  function loadFonts() {
+    var inUse = false;
+    document.fonts.forEach(function (face) {
+      if (face.family.replace(/["']/g, '') === 'Pretendard' && face.status !== 'unloaded') inUse = true;
+    });
+    if (!inUse) return;
+    ['400', '500', '600', '700'].forEach(function (weight) {
+      document.fonts.load(weight + ' 16px Pretendard').catch(function () { /* the system font stands in */ });
+    });
+  }
   function decoded(files) {
     warm(files);
     return Promise.all(files.map(function (file) {
@@ -1142,8 +1186,9 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
   }
 
   // ---- The page. The phone is drawn at 1 pt = 1 px and scaled: beside the text on a wide window,
-  //      to the height of the window; under the title on a narrow one, to its width; embedded,
-  //      together with its controls, to the frame. A drag is measured in points. ----
+  //      to the height of the window; under the title on a narrow one, to its width and to the
+  //      height left under the title; embedded, together with its controls, to the frame. A drag is
+  //      measured in points. The breakpoint is the page's one width query, read through --page-wide.
   var scale = 1;
   function fitPage() {
     var width = document.documentElement.clientWidth;
@@ -1156,11 +1201,14 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
       $('stage').style.height = DEVICE.height + 'px';
       return;
     }
-    if (width >= WIDE_PAGE) {
-      scale = Math.min(1, (height - 2 * LAYOUT.s5) / DEVICE.height,
-                       (width - 2 * LAYOUT.s5 - PAGE_GAP - PANEL_MIN) / DEVICE.width);
+    // The layout viewport, which a mobile browser does not resize as its toolbar slides away
+    var visible = document.documentElement.clientHeight;
+    if (token('--page-wide') === 1) {
+      scale = Math.min(1, (visible - 2 * LAYOUT.s5) / DEVICE.height,
+                       (width - 2 * LAYOUT.s5 - token('--page-gap') - token('--page-panel-min')) / DEVICE.width);
     } else {
-      scale = Math.min(1, (width - 2 * LAYOUT.s4) / DEVICE.width);
+      var below = visible - $('stage').offsetTop - LAYOUT.s3;
+      scale = Math.min(1, (width - 2 * LAYOUT.s4) / DEVICE.width, Math.max(below / DEVICE.height, NARROW_MIN_SCALE));
     }
     scale = Math.max(scale, 0.3);
     $('phone').style.transform = 'scale(' + scale + ')';
@@ -1439,6 +1487,11 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
     this.lastExit = { key: key, pose: exit };
     card.classList.add('is-flying');
     card.style.zIndex = String(STACK.depth + 1);
+    // A card on its way out is no longer the front card, so assistive technology no longer sees it
+    // (CardStack: accessibilityHidden unless the card is at the front with no exit under way)
+    card.setAttribute('aria-hidden', 'true');
+    card.removeAttribute('role');
+    card.removeAttribute('aria-label');
     showStamp(card, verdict, 1, reduce ? 'none' : stampTransition);
     if (reduce) {
       card.style.transition = 'opacity ' + MOTION.fade + 's linear ' + MOTION.stampHoldReduced + 's';
@@ -1633,7 +1686,13 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
       give(verdict, id);
       state.rewind = { id: id, verdict: verdict };
       renderReview(true);
-      settleFocus();
+      // The header's buttons stay open while a card is in flight (ReviewHeader), and the app's Trash
+      // and Library read the catalog as it changes, so a screen opened meanwhile takes the verdict
+      // when it lands
+      if (state.view === 'trash') renderTrash();
+      else if (state.view === 'library') renderLibrary();
+      // Only focus that was lost moves: a screen opened meanwhile has it on purpose
+      if (!usable(document.activeElement)) settleFocus();
       announce(PAST[verdict] + '. ' + place());
     }
   });
@@ -1683,7 +1742,7 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
     if (entering) {
       deck.bringBack(items.map(toItem), entering, function () {
         syncDock();
-        settleFocus();
+        if (!usable(document.activeElement)) settleFocus();
         announce('Rewound. ' + place());
       });
     } else {
@@ -1778,26 +1837,36 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
     if (joined > 0) said.push(joined + ' ' + plural(joined, 'screenshot', 'screenshots') + ' came due.');
     if (delivered) {
       showBanner();
-      said.push('Notification: Time to sift. See which screenshots are over ' + MINIMUM_AGE_DAYS + ' days old. One swipe each.');
+      said.push('Imitation notification: Time to sift. See which screenshots are over ' + MINIMUM_AGE_DAYS + ' days old. One swipe each.');
     }
     announce(said.join(' '));
   }
 
+  // The banner stays while the pointer is over it or while it has focus, and leaves on its own a
+  // few seconds after both have gone. The two are kept apart, so that one of them leaving does not
+  // start the clock while the other still holds the banner.
   var bannerTimer = 0;
+  var bannerHovered = false;
+  var bannerFocused = false;
   function showBanner() {
     var banner = $('banner');
     banner.hidden = true;
     void banner.offsetWidth;
     banner.hidden = false;
-    holdBanner(false);
+    bannerHovered = banner.matches(':hover');
+    bannerFocused = document.activeElement === banner;
+    holdBanner();
   }
-  function holdBanner(held) {
+  function holdBanner() {
     cancel(bannerTimer);
-    if (!held) bannerTimer = later(BANNER_SECONDS, function () { hideBanner(); });
+    if ($('banner').hidden || bannerHovered || bannerFocused) return;
+    bannerTimer = later(BANNER_SECONDS, function () { hideBanner(); });
   }
   function hideBanner() {
     var banner = $('banner');
     cancel(bannerTimer);
+    bannerHovered = false;
+    bannerFocused = false;
     if (banner.hidden) return;
     var focused = document.activeElement === banner;
     banner.hidden = true;
@@ -1847,7 +1916,8 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
     });
     later((spread ? Math.max(step - 1, 0) * MOTION.stagger : 0) + MOTION.fade, function () {
       then();
-      settleFocus();
+      // Only on the grid's own screen: one opened while the cells faded keeps its focus
+      if (grid.closest('.view') === $('view-' + state.view)) settleFocus();
     });
   }
 
@@ -2062,7 +2132,6 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
   // The photo-access dialog: iOS asks once. After Don't Allow the app can only point to Settings,
   // which a page cannot open, so Open Settings brings the dialog back in its place.
   function askForPhotos(fromSettings) {
-    warmAll();
     showAlert({
       photos: true,
       stacked: true,
@@ -2115,10 +2184,12 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
     library: ['#library-grid .cell:not(.is-leaving)']
   };
   // After an action focus stays where it is if that still exists, goes back to what opened the dialog
-  // if not, and otherwise to what the screen offers. Never while the page does not have the focus:
-  // a frame must not take it from the page around it.
+  // if not, and otherwise to what the screen offers. Focus left on the screen itself only waited for
+  // something better, such as Keep sifting once the last thumbnail has faded. Never while the page
+  // does not have the focus: a frame must not take it from the page around it.
   function settleFocus(opener) {
-    if (!document.hasFocus() || usable(document.activeElement)) return;
+    var here = document.activeElement;
+    if (!document.hasFocus() || (usable(here) && !here.classList.contains('view'))) return;
     var next = usable(opener) ? opener : null;
     (FALLBACK[state.view] || []).forEach(function (selector) {
       if (!next && usable(document.querySelector(selector))) next = document.querySelector(selector);
@@ -2154,6 +2225,11 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
     var kind = !left || !move ? null : (reduceMotion.matches ? 'fade' : move);
     dropDrags();
     cancel(moveTimer);
+    // A toast belongs to the screen it was raised on and leaves with it
+    if (left) {
+      cancel(toastTimer);
+      $('toast').hidden = true;
+    }
     VIEWS.forEach(function (name) {
       var node = $('view-' + name);
       MOVE_CLASSES.forEach(function (name) { node.classList.remove(name); });
@@ -2261,8 +2337,10 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
   $('viewer-first').addEventListener('click', function () { viewerAction(false); });
   $('viewer-second').addEventListener('click', function () { viewerAction(true); });
   $('banner').addEventListener('click', openFromBanner);
-  ['pointerenter', 'focus'].forEach(function (name) { $('banner').addEventListener(name, function () { holdBanner(true); }); });
-  ['pointerleave', 'blur'].forEach(function (name) { $('banner').addEventListener(name, function () { holdBanner(false); }); });
+  $('banner').addEventListener('pointerenter', function () { bannerHovered = true; holdBanner(); });
+  $('banner').addEventListener('pointerleave', function () { bannerHovered = false; holdBanner(); });
+  $('banner').addEventListener('focus', function () { bannerFocused = true; holdBanner(); });
+  $('banner').addEventListener('blur', function () { bannerFocused = false; holdBanner(); });
   $('skip').addEventListener('click', skip);
   $('start-over').addEventListener('click', function () { startOver(true); });
 
@@ -2302,13 +2380,14 @@ img { display: block; -webkit-user-drag: none; user-select: none; }
   window.addEventListener('pageshow', function (event) { if (event.persisted) startOver(false); });
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(function () {
+      loadFonts();
       fitFaces();
       // The copy under the demo is set in the web font, so the demo's region is final only now
       if (state.view === 'permission' && !demo.stopped && !demoDeck.dragging() && !overlayOpen()) restartOnboarding();
     });
   }
 
-  warm(FIRST_FILES);
+  warmAll();
   fitPage();
   startOver(false);
 })();
