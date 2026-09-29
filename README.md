@@ -20,6 +20,8 @@ Sift is an iOS 17 app that turns your Photos screenshots into a card stack you s
 
 Course project for IXD 750 Product Innovation, Academy of Art University, 2026.
 
+**On the web:** [Design system](https://heejae92.github.io/Sift/design-system.html) · [Information architecture](https://heejae92.github.io/Sift/ia.html)
+
 This repository holds the app (SwiftUI, Swift 6, no third-party code), its design system, the
 information architecture and the architecture document; the name Sift is provisional (ADR-002).
 Swift is canonical for the design system (ADR-001): every token value is typed once under
@@ -166,7 +168,7 @@ seed both again in the order above: `simctl addmedia`, grant access, the seed to
 
 ## Viewing the guide
 
-`open design-system.html`, or serve the folder with `python3 -m http.server` and open
+The guide and the IA page are published with GitHub Pages from `main`: https://heejae92.github.io/Sift/design-system.html and https://heejae92.github.io/Sift/ia.html. Every push to `main` republishes them. Locally, run `open design-system.html`, or serve the folder with `python3 -m http.server` and open
 `http://localhost:8000/design-system.html`. It is one file with inline CSS and JavaScript and needs
 no build step.
 
