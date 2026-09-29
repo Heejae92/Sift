@@ -26,7 +26,7 @@ Sift makes cleaning up screenshots quick.
 - **Swipe to decide.** You look at one screenshot at a time. Swipe left to move it to Trash, right to Archive, or up to Favorites.
 - **Delete everything at the end.** Screenshots in Trash are not deleted right away. You can look through them first and then delete them all at once.
 - **Undo mistakes.** If you swipe the wrong way, you can undo the last swipe. You can also restore screenshots from Trash before you delete them.
-- **Get a monthly reminder.** Sift can remind you every 30 days when it's time to clean up again.
+- **Get a monthly reminder.** Sift can remind you every 30 days when it is time to clean up again.
 
 ## How it works
 
@@ -38,7 +38,7 @@ Sift makes cleaning up screenshots quick.
 
 1. **Start.** Open Sift and allow access to your Photos. Sift only looks for screenshots that are more than 30 days old. Your photos stay on your phone.
 2. **Review.** Sift shows one screenshot at a time. Swipe left for Trash, right for Archive, or up for Favorites. If you make a mistake, tap Rewind to undo the last swipe.
-3. **Finish.** When there are no screenshots left to review, you're done. You can also turn on a reminder for your next cleanup.
+3. **Finish.** When there are no screenshots left to review, you are done. You can also turn on a reminder for your next cleanup.
 4. **Delete.** Open Trash to see the screenshots you chose to remove. You can restore anything you want to keep, or delete everything at once.
 5. **Find saved screenshots.** Open Library to see the screenshots you kept in Favorites or Archive.
 
@@ -47,7 +47,7 @@ Sift makes cleaning up screenshots quick.
 Try the Sift simulator in your browser. Swipe the sample screenshots left, right, or up to see how Sift works. Nothing you do in the simulator is saved or sent anywhere.
 
 <p align="center">
-  <iframe src="simulator.html" title="Sift simulator" width="100%" height="900" style="border:0; max-width:460px; height:min(960px, 92vh)" loading="lazy"></iframe>
+  <iframe src="simulator.html?embed=1" title="Sift simulator" width="384" height="884" loading="lazy" style="border:0;max-width:100%;height:auto;aspect-ratio:384/884"></iframe>
 </p>
 
 <p align="center"><sub><a href="https://heejae92.github.io/Sift/simulator.html">Open the simulator on its own page</a></sub></p>

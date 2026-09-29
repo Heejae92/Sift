@@ -38,6 +38,14 @@ final class DemoVideoTests: XCTestCase {
         }
     }
 
+    /// The run archives and favorites in the library it sifts, so it runs on a simulator only: on a
+    /// device that library is someone's own photos (ADR-027, ADR-033).
+    nonisolated override func setUpWithError() throws {
+        #if !targetEnvironment(simulator)
+        throw XCTSkip("simulator only: writes to Photos")
+        #endif
+    }
+
     func testDemoRun() throws {
         try XCTSkipUnless(ProcessInfo.processInfo.environment["SIFT_RECORD_DEMO"] == "1",
                           "set SIFT_RECORD_DEMO=1 (TEST_RUNNER_SIFT_RECORD_DEMO=1 on xcodebuild) to perform the demo run")

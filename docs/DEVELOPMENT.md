@@ -22,7 +22,7 @@ name lint from it. The app consumes those tokens and nothing else (P-12).
 | `Sift/Resources/` | The asset catalog, the four Pretendard cuts with their license (`Fonts/Pretendard-OFL.txt`), and six sample screenshots (real iOS screens captured with `SiftUITests/SampleCaptureTests`) used by the demo stack and as the simulator seed |
 | `Sift/PrivacyInfo.xcprivacy` | Privacy manifest: no tracking, no collection, no required-reason APIs |
 | `SiftTests/` | Swift Testing suites, with actor fakes for Photos (`FakePhotoLibrary`) and for the reminder (`FakeReminderScheduler`) and an in-memory store, plus the opt-in sample seed tool (`SampleSeedTests`) |
-| `SiftUITests/` | XCTest UI tests: the screenshot tour (`SiftTourTests`), the opt-in sample capture tool (`SampleCaptureTests`) and the opt-in demo run behind the video (`DemoVideoTests`) |
+| `SiftUITests/` | XCTest UI tests: the screenshot tour (`SiftTourTests`), the opt-in sample capture tool (`SampleCaptureTests`) and the opt-in demo run behind the video (`DemoVideoTests`). All three write to the library they run against, so each skips itself on a device (`XCTSkip`, "simulator only: writes to Photos") |
 | `docs/knowledge/ARCHITECTURE.md` | Stack, module map, data flow, the deck state machine, concurrency rules, build order |
 | `docs/knowledge/UI_DESIGN.md` | The design system: tokens, components, screens, the generated contrast table |
 | `docs/knowledge/IA.md` | The information architecture: objects, screens, navigation, routing, the queue lifecycle, persistence, external change. ADR-025, confirmed 2026-09-27; the 30-day rule, ADR-032, 2026-09-28; the reminder, ADR-034, 2026-09-29 |
@@ -31,12 +31,12 @@ name lint from it. The app consumes those tokens and nothing else (P-12).
 | `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-035, plus the superseded decisions S-1 to S-4 |
 | `docs/superpowers/specs/2026-09-23-sift-design-system-design.md` | The design spec behind the design system |
 | `docs/references.md` | Reference boards, the format reference, three Lazyweb permission-screen links |
-| `docs/DEVELOPMENT.md` | This file: the file map, building, running on the simulator, recording the demo, the design-system commands and the notes that used to sit in the README |
+| `docs/DEVELOPMENT.md` | This file: the file map, building, running on the simulator, recording the demo, the web simulator, the design-system commands and the notes that used to sit in the README |
 | `docs/demo/` | The demo video at the top of the README (`sift-demo.mp4`) and its poster (`sift-demo-poster.png`), made by `SiftUITests/DemoVideoTests` and `scripts/make-demo-video.swift` |
 | `docs/screenshots/` | The simulator frames shown at the top of the README, exported from the screenshot tour, downscaled with `sips --resampleWidth 480` and given a 3 px `#D1D1D6` border (`magick … -bordercolor '#D1D1D6' -border 3`). `3-all-done.png` comes from the reminder check of ADR-034 instead, with the status bar pinned to the tour's 2:26 (`simctl status_bar … override --time 2:26`) |
 | `design-system.html` | Single-file living style guide with a working swipe demo |
-| `simulator.html` | The app simulated in a browser, embedded in the README's "Try it" section (ADR-035). One file, no build step; it reads its numbers from the generated `:root` block, which `lint` checks |
-| `docs/simulator/` | The simulator's six cards: the sample screenshots resampled with `sips --resampleWidth 600 -s format jpeg -s formatOptions 78` |
+| `simulator.html` | The app simulated in a browser, on its own and, with `?embed=1`, in the README's "Try it" section (ADR-035). One file, no build step; it reads its numbers from its copy of the generated `:root` block, which `lint` checks. See "The web simulator" below |
+| `docs/simulator/` | The simulator's six images: the sample screenshots at 480 px, JPEG quality 80, with their metadata removed (the commands are under "The web simulator") |
 | `ia.html` | The information architecture as diagrams: object model, screen map, launch routing, queue state machine |
 | `scripts/ds_tokens.py` | `contrast`, `emit-css`, `lint`. Standard library only |
 | `scripts/typecheck-ds.sh` | Type-checks the token files without an Xcode project |
@@ -216,16 +216,92 @@ The guide, the IA page and the simulator are published with GitHub Pages from `m
 Without `--bind` the server answers every machine on the network, and it serves `.git` too. It is one file with inline CSS and JavaScript and needs
 no build step.
 
+## The web simulator
+
+`simulator.html` is the app in a browser, for readers of the project page without an iPhone at
+hand (ADR-035). Like the guide it is one file with inline CSS and JavaScript and no build step. It is
+a demonstration, not a second app: the Swift sources are canonical, and a change to a screen is made
+in the app first and then, by hand, here. It runs the onboarding block with its demo, the
+photo-access dialog and the denied block, Review with the deck, rewind and the all-done block, the
+cleanup reminder, Trash with both rungs of deletion, Library, the viewer and Credits, over nine
+screenshots: the six samples, dated 35 to 58 days before the visitor's today as the seed tool dates
+them, and three recent ones that wait. The iOS dialogs and the reminder's banner are imitations and
+say so. Beside the phone, "Skip 30 days" moves the simulated date on by 30 days, which brings the
+waiting screenshots due and delivers the reminder when it is on, and "Start over" returns to the
+onboarding block. Every load starts there too, and nothing is stored.
+
+Serve the folder as for the guide, or open the file:
+
+```
+python3 -m http.server --bind 127.0.0.1 8000
+open http://localhost:8000/simulator.html              # the page: phone, controls, intro, links
+open "http://localhost:8000/simulator.html?embed=1"    # what the README's frame shows
+```
+
+`embed` is the one thing the page reads from its address, as yes or no. With `?embed=1` the page
+shows the phone and its two controls only, drawn at 426 × 980 and scaled whole to its frame, with the
+phone at the top, so a frame of the same proportions has no empty band. The README's frame is
+`width="384" height="884"` with `style="border:0;max-width:100%;height:auto;aspect-ratio:384/884"`,
+which keeps the proportions at any width; a frame of other proportions leaves a margin at the sides
+or at the bottom, never at the top. Without it the phone stands at the top of the window, beside the
+title, the intro, the controls and the links on a window 800 px or wider, scaled to the window's
+height, and under a one-line title on a narrower one, scaled to its width.
+
+**Its token block.** The page carries a copy of the generated `:root` block and reads every swipe,
+stack and duration number from it. After a token change, paste the same `emit-css` output into
+`simulator.html` as into the guide: `lint` compares both copies with fresh output, outside HTML
+comments, and fails on either one when it is stale, or when the page is missing. What the generator
+does not emit is typed once in the page and named where it is typed: in its own `:root` block, the
+springs' stand-in durations, the phone (an iPhone 17 in points, with its safe areas), the look of the
+iOS imitations (`--os-*`) and the embedded size; in the script, the two product rules
+(`MINIMUM_AGE_DAYS`, `REMINDER_INTERVAL_DAYS`), the skip (`SKIP_DAYS`), how long the banner stays, the
+pointer arithmetic and the page's breakpoint.
+
+**Its images.** The six samples, resampled, then stripped of every metadata block (`jpegtran` is in
+Homebrew's `jpeg-turbo`):
+
+```
+for i in 1 2 3 4 5 6; do
+  sips -s format jpeg -s formatOptions 80 --resampleWidth 480 "Sift/Resources/SampleScreenshots/sample-$i.png" --out "/tmp/sample-$i.jpg"
+  jpegtran -copy none -optimize -progressive -outfile "docs/simulator/sample-$i.jpg" "/tmp/sample-$i.jpg"
+done
+```
+
+On 2026-09-29 that gave six 480 × 1043 images, 380 543 bytes together. The page asks for the three
+the demo shows as it opens and for the other three when the visitor heads for Review.
+
+**Its policy names two jsDelivr addresses, not the host.** The page loads one stylesheet,
+Pretendard's, and not Adobe's kit: the app shows its display roles in Pretendard Bold until it has a
+Forager license (ADR-003), and so does the page, through `--font-display`. The stylesheet is at
+`…/pretendard@v1.3.9/dist/web/static/pretendard.css` and asks for its fonts at
+`…/pretendard@v1.3.9/packages/pretendard/dist/web/static/`, a different folder, so `style-src` and
+`font-src` differ. A new Pretendard version changes both, and the hash under "Pinned stylesheet".
+A machine with Pretendard installed never asks for the web fonts, so a wrong `font-src` shows no
+error there. Test it in the page's console with the address the stylesheet itself asks for, not one
+typed by hand:
+
+```
+const sheet = [...document.styleSheets].find(s => s.href && s.href.includes('pretendard'));
+const font = new URL(sheet.cssRules[0].style.getPropertyValue('src').match(/url\("?([^")]+)/)[1], sheet.href).href;
+await new FontFace('probe', `url(${font})`).load();   // resolves: allowed · NetworkError and a font-src line: refused
+```
+
+**Checking it.** It has no tests of its own. Drive it by mouse; by keyboard alone (Tab, Enter,
+← → ↑ and Z); at a phone's width with touch (the browser's device emulation); with Reduce Motion
+emulated in the developer tools (or on, in System Settings › Accessibility › Display); and in a
+frame, `?embed=1`. The console stays empty, and a policy violation would print there. After a change
+to a screen in the app, make the same change here (ADR-035).
+
 ## Design-system commands
 
 Four commands, and they are the whole verification set for the tokens. Changing a token means
-running all four, because `lint` compares the `:root` block pasted into the guide against fresh
-`emit-css` output.
+running all four, because `lint` compares the `:root` block pasted into the guide, and its copy in
+the simulator, against fresh `emit-css` output.
 
 | # | Command | Expected output |
 |---|---|---|
 | 1 | `python3 scripts/ds_tokens.py contrast` | ends with `43 pairs · 0 failure(s)`, and no `OUT OF sRGB GAMUT` note in the token table |
-| 2 | `python3 scripts/ds_tokens.py emit-css > scripts/out/tokens.css` | writes the `:root` block; paste it into `design-system.html` |
+| 2 | `python3 scripts/ds_tokens.py emit-css > scripts/out/tokens.css` | writes the `:root` block; paste it into `design-system.html` and `simulator.html` |
 | 3 | `python3 scripts/ds_tokens.py lint` | one `lint: EXCEPTION` line per `DECLARATION_ONLY` entry, one `lint: WARNING` line, then `lint: OK` |
 | 4 | `scripts/typecheck-ds.sh` | `typecheck: OK` |
 
@@ -313,24 +389,7 @@ name the installed font first, so the refused stylesheet is never missed. The br
 says so, in one line naming `integrity`. Adobe's kit cannot be pinned this way, because Adobe
 rewrites `blt4ith.css` whenever the kit is published.
 
-**The simulator's Content-Security-Policy names two jsDelivr addresses, not the host.** The
-stylesheet is at `…/pretendard@v1.3.9/dist/web/static/pretendard.css` and asks for its fonts
-at `…/pretendard@v1.3.9/packages/pretendard/dist/web/static/`, a different folder, so `style-src`
-and `font-src` differ. A new Pretendard version changes both, and the hash above. A machine with
-Pretendard installed never asks for the web fonts, so a wrong `font-src` shows no error there. Test
-it in the page's console with the address the stylesheet itself asks for, not one typed by hand:
-
-```
-const sheet = [...document.styleSheets].find(s => s.href && s.href.includes('pretendard'));
-const font = new URL(sheet.cssRules[0].style.getPropertyValue('src').match(/url\("?([^")]+)/)[1], sheet.href).href;
-await new FontFace('probe', `url(${font})`).load();   // resolves: allowed · NetworkError and a font-src line: refused
-```
-
-**The simulator is checked by hand.** It has no tests of its own. Serve the folder as for the guide,
-open `http://localhost:8000/simulator.html`, and drive it; the console stays empty, and a policy
-violation would print there. Reduce Motion is a system setting (macOS: System Settings ›
-Accessibility › Display), or an emulated media feature in the browser's developer tools. After a
-change to a screen in the app, make the same change here (ADR-035).
+The simulator's policy, and how to test its font folder, are under "The web simulator" above.
 
 **Bump the guide's `?v=` when the Typekit kit changes.** Typekit serves kit CSS with `max-age=600`,
 so an edit to the kit does not reach the page for ten minutes. `design-system.html` loads

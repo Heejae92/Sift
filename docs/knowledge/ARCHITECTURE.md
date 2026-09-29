@@ -1,6 +1,6 @@
 # Sift · Architecture
 
-v1.3 · 2026-09-29 · English · companion to `IA.md` (what exists) and `UI_DESIGN.md` (what it looks like)
+v1.4 · 2026-09-29 · English · companion to `IA.md` (what exists) and `UI_DESIGN.md` (what it looks like)
 
 This file is the map of the code: which modules exist, what each one owns, how data moves, and
 what a change has to touch. Read it before adding a file; update it when you add one. Decisions
@@ -317,13 +317,16 @@ simulator (ADR-034).
   `scripts/make-demo-video.swift` turns into the video on the project page (`docs/demo/`). It
   launches with no launch arguments, so it sees the real 30-day rule (ADR-032). It is skipped unless
   `SIFT_RECORD_DEMO=1` is in the runner's environment, passed as `TEST_RUNNER_SIFT_RECORD_DEMO=1`.
-  Like `SampleCaptureTests` it is gated by the environment alone and is simulator-only by nature: it
-  is filmed with `simctl io recordVideo` and depends on the seeded simulator library. Unlike the seed
-  tool below it holds no PhotoKit code, so it needs no `#if targetEnvironment(simulator)`. It
+  It is filmed with `simctl io recordVideo` and depends on the seeded simulator library. It
   archives, favorites and trashes the seeded samples, so a second take starts from an unreviewed
   library (`docs/DEVELOPMENT.md` "Recording the demo").
 
-Its companion lives in `SiftTests`, because it needs the app's own Photos access rather than a UI:
+All three write to the library they run against, which on a device is someone's own photos, so each
+throws `XCTSkip("simulator only: writes to Photos")` from `setUpWithError` when it is not built for a
+simulator (`#if !targetEnvironment(simulator)`, ADR-035's correction of 2026-09-29). They hold no
+PhotoKit code, so the gate is at run time and a device test build still compiles them.
+
+Their companion lives in `SiftTests`, because it needs the app's own Photos access rather than a UI:
 
 - `SampleSeedTests` is the other development tool (ADR-033): it adds the six bundled samples to the
   simulator's Photos library with fixed creation dates in August 2026, 35 to 58 days before

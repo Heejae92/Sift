@@ -24,7 +24,7 @@
 > discount every hit the same command reports for `'Sift/'`, plus the one path join named above. The
 > lint does not check any of this; it checks `DesignSystem/` only.
 
-v1.7 · 2026-09-29 · light-only · iOS 17 SwiftUI
+v1.8 · 2026-09-29 · light-only · iOS 17 SwiftUI
 
 The product is a screenshot triage app. It shows one screenshot at a time as a card, newest
 unreviewed first, with a progress counter. Swipe left sends it to the app's own Trash, right to a
@@ -82,7 +82,7 @@ Swift by hand; the two drifted. Here the mirror is generated, so it cannot.
 | Artifact | Produced by | Consumed by |
 |---|---|---|
 | `scripts/out/contrast.md` | `ds_tokens.py contrast` | pasted verbatim into [§1 Measured contrast](#measured-contrast) |
-| `scripts/out/tokens.css` | `ds_tokens.py emit-css` | pasted verbatim into the `:root` block of `design-system.html`; indexed in [§14](#14-token-index) |
+| `scripts/out/tokens.css` | `ds_tokens.py emit-css` | pasted verbatim into the `:root` block of `design-system.html` and of `simulator.html` (ADR-035); indexed in [§14](#14-token-index) |
 | the name lint | `ds_tokens.py lint` | fails the build when a token is missing from this file or from the guide |
 
 The parser depends on literal shapes in the Swift source: `oklch(L, C, H)`, `oklch(L, C, H, a)`,
@@ -105,7 +105,8 @@ any out-of-gamut OKLCH value. `emit-css` prints the `:root` block. `lint` checks
 color token has a CSS variable that the guide actually uses and a backticked mention in this file;
 every numeric token has a CSS variable in the guide and a `Enum.name` mention here; the product
 name appears in no token file but `Brand.swift`; and the `:root` block pasted into the guide is
-byte-identical to the current `emit-css` output. Usage is counted by exact variable name and only
+byte-identical to the current `emit-css` output, as is the copy the simulator carries
+(`simulator.html`, ADR-035), which fails the lint when it is stale or missing. Usage is counted by exact variable name and only
 outside HTML comments, so a token named in a comment does not count as consumed. Three tokens the
 guide declares but cannot consume are printed as `EXCEPTION` lines on every run and are listed in
 [§14](#14-token-index); `lint` also prints a `WARNING` while `DSIconCredits.entries` is still empty.
@@ -2005,3 +2006,4 @@ the expressive palette to serve as blocks, `onboarding` on `trash.main` and `lim
 | v1.5 | 2026-09-28 | ADR-032 in §11.2 and §12: Review asks only about screenshots at least 30 days old, the counter counts those, and the all-done block adds "Next screenshot: Oct 12." on its own line. §15 items 9 to 14, which had landed below this table, moved back into §15. The app-phase edits of 2026-09-27 (ADR-028 to ADR-031) are recorded in those ADRs and have no row here. |
 | v1.6 | 2026-09-28 | ADR-033 in §11.1 and §12: when some picked screenshots are unreviewed and under 30 days old, the limited-access block adds one line saying they wait and how many are ready now, or the day the first one is ("It's ready" when only one waits); the CTA counts the ready ones, or reads "Continue" when none is ready. When nothing picked is a screenshot, the block says so, "Pick more" takes the fill and "Continue" is the text action. §12 records the two "Continue" labels as the exception to "Verbs first". §11.1's footer row to Credits, stale since ADR-031, is replaced by a note that there is none. |
 | v1.7 | 2026-09-29 | ADR-034 in §7, §10, §11.2, §12 and §15: the all-done block carries the cleanup reminder. Its bare-text action reads "Remind me every 30 days" while the reminder is off and "Turn on reminders in Settings" once it is denied, which opens the app's notification settings; denied covers notifications declined and notifications allowed with alerts, the lock screen and Notification Center all off. There is no reminder action while it is on, and "Open Trash (N)" stays the one filled action. While the reminder is on, "Next reminder: Nov 28." takes the place of the "Next screenshot" line. VoiceOver hears the outcome of "Remind me". §12 adds the notification's title and body and the two announcements; §7 records `DSHaptic.permissionGranted` for the reminder and that the notification's sound is iOS's, which leaves ADR-012 standing; §15 item 11 lists the reminder's details as awaiting the owner. |
+| v1.8 | 2026-09-29 | ADR-035. §0: `emit-css` output is pasted into `simulator.html` as well as the guide, and `lint` fails when that copy is stale or missing. §11.1: the three Lazyweb references are named rather than linked, from the repository audit of the same day. |

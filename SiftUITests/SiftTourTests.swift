@@ -24,6 +24,14 @@ final class SiftTourTests: XCTestCase {
     private let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
     private var shot = 0
 
+    /// The tour trashes, archives and favorites in the library it runs against, so it runs on a
+    /// simulator only: on a device that library is someone's own photos (ADR-027, ADR-033).
+    nonisolated override func setUpWithError() throws {
+        #if !targetEnvironment(simulator)
+        throw XCTSkip("simulator only: writes to Photos")
+        #endif
+    }
+
     func testTour() throws {
         continueAfterFailure = true
         app.launchArguments = ["-SiftAllImages"]

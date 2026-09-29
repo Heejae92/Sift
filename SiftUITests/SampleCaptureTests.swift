@@ -9,6 +9,14 @@ import XCTest
 ///     xcodebuild … -only-testing:SiftUITests/SampleCaptureTests TEST_RUNNER_SIFT_CAPTURE_SAMPLES=1 test
 @MainActor
 final class SampleCaptureTests: XCTestCase {
+    /// It answers the built-in apps' permission alerts, so it runs on a simulator only: on a device
+    /// it would grant Photos and other access in someone's own apps (ADR-027, ADR-033).
+    nonisolated override func setUpWithError() throws {
+        #if !targetEnvironment(simulator)
+        throw XCTSkip("simulator only: writes to Photos")
+        #endif
+    }
+
     func testCaptureSamples() throws {
         try XCTSkipUnless(ProcessInfo.processInfo.environment["SIFT_CAPTURE_SAMPLES"] == "1",
                           "set SIFT_CAPTURE_SAMPLES=1 to capture sample screenshots")

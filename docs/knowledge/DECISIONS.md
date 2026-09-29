@@ -76,6 +76,7 @@
 | 032 | Review asks only about screenshots at least 30 days old; newer ones wait and join by themselves | 2026-09-28 | Active · corrected 2026-09-29 |
 | 033 | Follow-ups to the 30-day rule: backdated samples for the simulator, and the limited-access screen explains the wait | 2026-09-28 | Active |
 | 034 | A cleanup reminder every 30 days, re-anchored on each finished sift and turned on from the all-done block | 2026-09-29 | Active · owner has not seen the details |
+| 035 | A browser simulator on the project page, ported by hand from the app and its tokens | 2026-09-29 | Active · corrected 2026-09-29 |
 | S-1 | Dark-first adaptive tokens | 2026-09-22 | Superseded by 006 |
 | S-2 | SF Pro Rounded system font | 2026-09-22 | Superseded by 003 |
 | S-3 | SF Symbols as the icon set | 2026-09-22 | Superseded by 017 |
@@ -1786,6 +1787,90 @@ Checked on 2026-09-29 in Chromium: every screen above, at the width of a window 
 deletions and their cancellation, by synthetic pointer events and by a real keyboard and mouse
 driven through Playwright; Reduce Motion by emulation. Not checked: Safari, Firefox, a finger on a
 phone, a screen reader.
+
+**Correction, 2026-09-29 (the rebuild: time, the reminder, the page).** The entry describes the
+first version, published the same day as an interim. The owner then asked for more of the app on
+the page and found two faults in that version: an empty band above the phone, about 700 px of white
+on a wide window ("HTML 시뮬레이터에 이렇게 위에 공간이 많아?"), and a simulator that should open at the very
+beginning of the app ("시뮬레이터앱에 처음부터 띄워줘"). The page was rebuilt on the same deck, and what the
+entry says of it changes in the places below. Two more options were weighed at the rebuild and set
+aside with the three above: linking the demo video alone, which shows the app and lets nobody try
+it, and a recorded GIF, heavier than the video and just as passive. The Swift app stays canonical;
+the page is a demonstration of it, and where the two disagree the app is right.
+
+*Time.* *Screens* says the six cards are "dated 31 to 71 days before the visit so that each is past
+the 30-day line of ADR-032", and the list of what is not simulated names "a screenshot coming due
+during a session, and so the "Next screenshot" line". The six are now dated as the seed tool dates
+them, 35 to 58 days before the visitor's own today at the seed's times of day (ADR-033), and each
+chip carries the size the app showed for that sample ("10:05 AM · 259 KB" for the first). Three
+more, taken 3, 8 and 12 days before today from three of the same images, wait (ADR-032), and the
+all-done block names the day the first comes due. A control beside the phone, "Skip 30 days", moves
+the simulated today on by 30 days: the waiting screenshots come due and join the queue behind the
+front card, raising the counter's total, or bring an all-done block back to a card (`IA.md` §5).
+The simulated date is printed under the control. The rule's numbers stay in the script as before;
+the 30 of the control is the page's own, typed once as `SKIP_DAYS`.
+
+*The reminder.* The list of what is not simulated names "the reminder's notification", and
+*Screens* says "A trip to Settings cannot be drawn, so the page takes its outcome and says so in a
+line under the phone". "Remind me every 30 days" now raises an imitation of the iOS notification
+prompt. Allow turns the reminder on: the date line becomes "Next reminder:" 30 days on and the
+action goes. Don't Allow leaves "Turn on reminders in Settings". Finishing the queue moves the
+reminder, as `ReviewModel` does. With the reminder on, "Skip 30 days" delivers it: an imitation of
+the banner, "Time to sift" over the body of `UI_DESIGN.md` §12, slides in at the top of the phone,
+and a tap on it opens Review, as the launch routing would (`IA.md` §4). iOS shows no banner while
+the app is open; the page has nothing else to show it over. A page cannot open Settings, so "Open
+Settings" on the denied block and "Turn on reminders in Settings" raise the iOS prompt again in its
+place, and the prompt's caption says what the app would do. Each imitated dialog says it is one, in
+a caption that reads "Imitation of an iOS dialog" where the entry had "Simulated iOS dialog"; the
+banner carries no caption, and the line beside the phone names both. All are drawn in the iOS 26
+look of the frames and the video.
+
+*The page.* *On the page* says the frame is "no taller than 92 % of the visitor's window". The page
+now puts the phone at the top of the window in every layout. On a window 800 px or wider the phone
+stands beside a one-line title, the intro, the two controls and the links, scaled to the window's
+height, so a 1440 × 900 window shows all of it; on a narrower one it stands under the title, scaled
+to the width. The address `simulator.html?embed=1`, read as yes or no and for nothing else, shows the
+phone and its controls alone, drawn at 426 × 980 and scaled whole to the frame, so a frame of the
+same proportions shows no empty band; the project page's frame is 384 × 884 and keeps those
+proportions at any width through `aspect-ratio`. Every load, a reload, a page brought back from the
+browser's history and "Start over" open the onboarding block on a fresh library dated from the
+visitor's today: nothing is stored, so nothing is restored. The title, the intro, the line saying the
+dialogs are imitations and the two links are left out of the frame.
+
+*Display type.* It stays Pretendard Bold, now as a decision and not a fix waiting for the owner:
+the simulator shows the app as it ships, beside the app's own frames and video, and follows
+`DSFont.resolvedDisplay` until the app has a Forager license (ADR-003). Then `--font-display` and
+the app change together, and the guide's Adobe stylesheet and its hosts join the page and its
+policy; until then the page loads one stylesheet, Pretendard's, pinned, and its policy names
+jsDelivr alone. The owner has not been asked and can reverse it.
+
+*Smaller changes.* The status bar reads 9:41, not the visitor's clock. A screen pushed from Review
+slides in and out as an iOS push does, over `--motion-dur3`, where the list of what is not simulated
+has "the push between screens, which cross-fade here"; under Reduce Motion it still cross-fades. The
+rewind glyph is a U-turn arrow, the shape the app shows, where the guide draws a circular one; the
+other glyphs are still the guide's. The six images are 480 px JPEG from `sips` at quality 80 with
+every metadata block removed (`jpegtran -copy none`), 381 KB together. Where *Security* says the
+script "asks for the page's own six images, all six as the page opens", it now asks for the three
+that the demo and the first cards show as the page opens and for the other three when the visitor
+heads for Review, all from the page's own origin.
+
+*Checked* on 2026-09-29 in Chrome driven by Playwright: every screen by mouse and by keyboard alone;
+at 390 × 844 with touch events, the swipes, a commit on velocity and the page scrolling under a
+finger outside the card; Reduce Motion by emulation; embedded in a frame at 384 × 884 and at
+358 × 824; "Skip 30 days" with the reminder off, declined and on; the console and the policy quiet
+throughout. Still not checked: Safari, Firefox, a phone in the hand, a screen reader. Still not
+simulated: the limited-access interstitial; the viewer's pinch, double tap and drag to dismiss;
+long-press menus; haptics; an external change in Photos; a deletion that fails in part; Dynamic Type.
+
+**Correction, 2026-09-29 (the UI tests, from the same audit).** *Security* records two low findings
+from the check before the push. The repository audit that followed found a third. `SiftTourTests`,
+`SampleCaptureTests` and `DemoVideoTests` write to what they run against: the tour and the demo run
+trash, archive and favorite through the app, and the capture tool answers the built-in apps'
+permission alerts. Only an environment variable kept two of them off a device, and nothing kept the
+tour off one, where the library is someone's own photos. Each now throws
+`XCTSkip("simulator only: writes to Photos")` from `setUpWithError` when it is not built for a
+simulator (`#if !targetEnvironment(simulator)`), the gate `SampleSeedTests` has at compile time
+(ADR-033). `build-for-testing` passes for a simulator and for a generic iOS device.
 
 **Applies to** `simulator.html`, `docs/simulator/`, `README.md`, `scripts/ds_tokens.py` (`lint`),
 `docs/DEVELOPMENT.md`, `ARCHITECTURE.md` §1, `design-system.html` and `ia.html` (the `integrity`

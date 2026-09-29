@@ -5,14 +5,15 @@ every color is one fixed OKLCH value.
 
   ds_tokens.py contrast   WCAG table for every (foreground, background) pair in PAIRS.
                           Exit 1 on any FAIL or out-of-gamut OKLCH.
-  ds_tokens.py emit-css   :root custom properties for design-system.html.
+  ds_tokens.py emit-css   :root custom properties for design-system.html and simulator.html.
   ds_tokens.py lint       Every Swift token has a CSS var USED in the HTML (declared plus at least
                           one reference, counted by exact name outside comments) and a mention in
-                          UI_DESIGN.md; the generated :root block matches emit-css; the brand name
-                          appears in Brand.swift only. Tokens the guide cannot consume are listed
-                          in DECLARATION_ONLY with a reason and printed as an EXCEPTION on every
-                          run. Exits 1 on any problem; the empty icon-credits array prints a
-                          WARNING, not a failure.
+                          UI_DESIGN.md; the generated :root block matches emit-css in both
+                          design-system.html and simulator.html (ADR-035), outside HTML comments;
+                          the brand name appears in Brand.swift only. Tokens the guide cannot
+                          consume are listed in DECLARATION_ONLY with a reason and printed as an
+                          EXCEPTION on every run. Exits 1 on any problem; the empty icon-credits
+                          array prints a WARNING, not a failure.
 
 Standard library only. Paths resolve relative to this file, so the leading space in the parent
 folder name is harmless.
@@ -422,8 +423,12 @@ def cmd_lint() -> int:
     # 4. the generated CSS block in the HTML is current
     if html and css_block(tokens) not in html:
         problems.append("design-system.html's generated :root block is stale — re-run emit-css and paste it")
-    # 4b. the simulator carries a copy of the same block (ADR-035); a stale copy is the same defect
-    if SIM_FILE.exists() and css_block(tokens) not in SIM_FILE.read_text():
+    # 4b. the simulator carries a copy of the same block (ADR-035); a stale copy is the same defect,
+    #     checked the same way: outside HTML comments, and a missing page is a problem, not a pass
+    sim = re.sub(r"<!--.*?-->", "", SIM_FILE.read_text(), flags=re.S) if SIM_FILE.exists() else ""
+    if not sim:
+        problems.append(f"missing {SIM_FILE.name}")
+    elif css_block(tokens) not in sim:
         problems.append("simulator.html's generated :root block is stale — re-run emit-css and paste it")
 
     # 5. declaration-only tokens are printed every run, never silently tolerated
