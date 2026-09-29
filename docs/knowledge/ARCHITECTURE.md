@@ -70,7 +70,7 @@ Sift/                              app target sources (XcodeGen `sources: [Sift]
                                    constant lives in Data/ under the ADR that set it (ReviewPolicy, ADR-032)
   Resources/
     Assets.xcassets                LaunchBackground · AccentColor · icon catalog (Noun Project assets, when they land)
-    Fonts/                         Pretendard-*.otf
+    Fonts/                         Pretendard-*.otf · Pretendard-OFL.txt (SIL OFL 1.1, ships in the bundle)
     SampleScreenshots/             six real iOS screens (captured by SiftUITests/SampleCaptureTests) for DemoStack and for seeding a simulator
   PrivacyInfo.xcprivacy            no tracking, no collected data, no required-reason APIs
 SiftTests/                         Swift Testing · runs on the simulator against FakePhotoLibrary · SampleSeedTests (opt-in seed tool)

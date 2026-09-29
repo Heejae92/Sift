@@ -1,11 +1,27 @@
 # Sift
 
-Sift (provisional name) is an iOS 17 app that shows the screenshots in your Photos library one at
-a time as a card stack: swipe left to trash, right to archive, up to favorite, with a single-step
-rewind. Trash is the app's own holding pen; nothing leaves Photos until you empty it. This
-repository holds the design system, the information architecture, the architecture document and
-the app itself. SwiftUI, Swift 6, no third-party code.
+Sift is an iOS 17 app that turns your Photos screenshots into a card stack you sort with a swipe.
 
+<p align="center">
+  <img src="docs/screenshots/1-onboarding.png" width="160" alt="Welcome screen: swipe left to Trash, right to Archive, up to Fave, and a Get started button">
+  <img src="docs/screenshots/2-review.png" width="160" alt="Review screen: a Settings screenshot as a card, with Rewind, Trash, Fave and Archive buttons">
+  <img src="docs/screenshots/3-all-done.png" width="160" alt="All-done screen: Inbox zero, screenshot edition, with an Open Trash button">
+  <img src="docs/screenshots/4-trash.png" width="160" alt="Trash screen: seven screenshots in a grid above a Delete all button">
+  <img src="docs/screenshots/5-library.png" width="160" alt="Library screen: the Archive tab with eight archived screenshots">
+</p>
+
+**How it works**
+
+- Swipe left to send a screenshot to Trash, the app's own holding pen.
+- Swipe right to Archive it in the "Sift Archive" album in Photos, or up to Favorite it (Photos' heart).
+- One-step rewind takes back your last swipe.
+- Only screenshots taken 30 or more days ago are asked about; newer ones join once they reach 30 days.
+- Nothing leaves Photos until you empty Trash, and iOS asks you to confirm every permanent delete.
+
+Course project for IXD 750 Product Innovation, Academy of Art University, 2026.
+
+This repository holds the app (SwiftUI, Swift 6, no third-party code), its design system, the
+information architecture and the architecture document; the name Sift is provisional (ADR-002).
 Swift is canonical for the design system (ADR-001): every token value is typed once under
 `Sift/DesignSystem/`, and one script derives the CSS variables, the WCAG contrast table and the
 name lint from it. The app consumes those tokens and nothing else (P-12).
@@ -21,7 +37,7 @@ name lint from it. The app consumes those tokens and nothing else (P-12).
 | `Sift/Components/` | Shared views: buttons, color blocks, empty states, the thumbnail cell, the toast |
 | `Sift/Features/` | One folder per screen: Review, Permission, Trash, Library, Viewer, Credits |
 | `Sift/DesignSystem/*.swift` | The nine token files. The only place a design value is typed; a product rule's constant lives in `Sift/Data/` under the ADR that set it (`ReviewPolicy`, ADR-032) |
-| `Sift/Resources/` | The asset catalog, the four Pretendard cuts, and six sample screenshots (real iOS screens captured with `SiftUITests/SampleCaptureTests`) used by the demo stack and as the simulator seed |
+| `Sift/Resources/` | The asset catalog, the four Pretendard cuts with their license (`Fonts/Pretendard-OFL.txt`), and six sample screenshots (real iOS screens captured with `SiftUITests/SampleCaptureTests`) used by the demo stack and as the simulator seed |
 | `Sift/PrivacyInfo.xcprivacy` | Privacy manifest: no tracking, no collection, no required-reason APIs |
 | `SiftTests/` | Swift Testing suites, with an actor fake for Photos and an in-memory store, plus the opt-in sample seed tool (`SampleSeedTests`) |
 | `SiftUITests/` | XCTest UI tests: the screenshot tour (`SiftTourTests`) and the opt-in sample capture tool (`SampleCaptureTests`) |
@@ -33,6 +49,7 @@ name lint from it. The app consumes those tokens and nothing else (P-12).
 | `docs/knowledge/DECISIONS.md` | ADR-001 to ADR-033, plus the superseded decisions S-1 to S-4 |
 | `docs/superpowers/specs/2026-09-23-sift-design-system-design.md` | The design spec behind the design system |
 | `docs/references.md` | Reference boards, the format reference, three Lazyweb permission-screen links |
+| `docs/screenshots/` | The simulator frames shown at the top of this README, exported from the screenshot tour and downscaled with `sips --resampleWidth 480` |
 | `design-system.html` | Single-file living style guide with a working swipe demo |
 | `ia.html` | The information architecture as diagrams: object model, screen map, launch routing, queue state machine |
 | `scripts/ds_tokens.py` | `contrast`, `emit-css`, `lint`. Standard library only |
@@ -204,7 +221,7 @@ The module docstring at the top of `scripts/ds_tokens.py` states the same three 
 `ds_tokens.py` resolves its own paths relative to its file, so it is unaffected; a shell command
 that spells the path out is not.
 
-**The remote is `https://github.com/Heejae92/Sift`, private.** The global git configuration on
+**The remote is `https://github.com/Heejae92/Sift`, public.** The global git configuration on
 the machine that created it rewrites every GitHub push to SSH (`url.git@github.com:.pushInsteadOf`)
 and the machine has no SSH key, so this clone carries a repository-local identity `pushInsteadOf`
 for its own URL, which wins by being the longer match and keeps pushes on HTTPS through the `gh`
@@ -228,6 +245,10 @@ Because Forager Overlap's strokes intentionally run into each other, the display
 rather than as a fraction of its size, because its size is not fixed: it is set uppercase at
 `DSTextRole.stampBaseSize` (32) and clamped at `stampMaxSize` (44). The Pretendard roles keep their
 own tracking.
+
+**Pretendard is licensed under the SIL Open Font License 1.1**; the license text,
+`Sift/Resources/Fonts/Pretendard-OFL.txt`, ships next to the fonts and inside the app bundle, as the
+license requires.
 
 **Bump the guide's `?v=` when the Typekit kit changes.** Typekit serves kit CSS with `max-age=600`,
 so an edit to the kit does not reach the page for ten minutes. `design-system.html` loads
