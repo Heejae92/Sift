@@ -1,8 +1,8 @@
 # Sift
 
-Sift helps you clear out old screenshots, one swipe at a time.
+Clean up old screenshots with a simple swipe.
 
-**[Try the simulator](https://heejae92.github.io/Sift/simulator.html)** · [Code on GitHub](https://github.com/Heejae92/Sift)
+**[Try the simulator](https://heejae92.github.io/Sift/simulator.html)** · [View code on GitHub](https://github.com/Heejae92/Sift)
 
 <p align="center">
   <img src="docs/screenshots/1-onboarding.png" width="160" alt="Welcome screen: swipe left to Trash, right to Archive, up to Fave, and a Get started button">
@@ -14,19 +14,19 @@ Sift helps you clear out old screenshots, one swipe at a time.
 
 ## The problem
 
-I take a lot of screenshots, like tickets, recipes, maps and chats, and rarely look at them again. They pile up in Photos, and my phone is always short on storage. Clearing them out needs to happen regularly, but in Photos it means scrolling through everything and deleting screenshots one by one, so it keeps getting put off.
+I take a lot of screenshots: tickets, recipes, maps, chats, and things I want to remember. Most of them are only useful for a short time, but they stay in my Photos app, take up storage, and get harder to organize.
 
-What I needed was a way to gather only the screenshots I'm done with, usually the ones older than about a month, and quickly set aside the ones to delete.
+Deleting them one by one takes too much time, so I usually put it off. I wanted an easier way to review only my old screenshots and quickly decide what to keep or delete.
 
 ## The solution
 
-Sift turns clearing out screenshots into a quick monthly ritual instead of a chore.
+Sift makes cleaning up screenshots quick.
 
-- **It only asks about old screenshots.** Screenshots taken 30 or more days ago are the ones you're most likely done with. Sift gathers those and leaves everything else alone: your photos, and recent screenshots you may still need. A newer screenshot joins by itself once it turns 30 days old.
-- **Deciding takes one swipe.** Screenshots come one at a time as full-size cards, so you can see what each one is and decide in a second.
-- **Deleting happens once, at the end.** Screenshots you swipe away collect in Sift's Trash instead of disappearing right away. Trash shows how much storage they use, and you delete them all at once when you're ready.
-- **Nothing is lost by mistake.** Rewind takes back the last swipe, anything in Trash can be restored, and deleted screenshots stay in Photos' Recently Deleted for 30 days.
-- **A reminder every 30 days.** Turn it on once, and Sift reminds you when it's time to sift again: 30 days after your last cleanup, at the same time of day.
+- **See only old screenshots.** Sift shows screenshots that are more than 30 days old. Your regular photos and newer screenshots are left untouched.
+- **Swipe to decide.** You look at one screenshot at a time. Swipe left to move it to Trash, right to Archive, or up to Favorites.
+- **Delete everything at the end.** Screenshots in Trash are not deleted right away. You can look through them first and then delete them all at once.
+- **Undo mistakes.** If you swipe the wrong way, you can undo the last swipe. You can also restore screenshots from Trash before you delete them.
+- **Get a monthly reminder.** Sift can remind you every 30 days when it's time to clean up again.
 
 ## How it works
 
@@ -34,24 +34,26 @@ Sift turns clearing out screenshots into a quick monthly ritual instead of a cho
   <video src="docs/demo/sift-demo.mp4" poster="docs/demo/sift-demo-poster.png" width="280" controls muted playsinline></video>
 </p>
 
-<p align="center"><sub>Demo, about 70 seconds, no sound: onboarding, three swipes and a rewind, all done, Trash, Library. <a href="https://heejae92.github.io/Sift/docs/demo/sift-demo.mp4">Open the video</a></sub></p>
+<p align="center"><sub>Demo video, about 70 seconds, no sound. <a href="https://heejae92.github.io/Sift/docs/demo/sift-demo.mp4">Open the video</a></sub></p>
 
-1. **Start.** A short demo shows the three swipes. Tap Get started and allow access to Photos. Nothing leaves your phone.
-2. **Sift.** Each card is a screenshot from 30 or more days ago, newest first. Swipe left to Trash, right to the "Sift Archive" album, or up to Favorites. Tap Rewind to undo the last swipe.
-3. **Finish.** When the pile is empty, Sift says so. Tap Remind me every 30 days, and Sift shows the date of your next sift.
-4. **Empty Trash.** Trash shows how many screenshots are waiting and how much space they use. Delete them all at once, or restore any you want to keep. iOS asks you to confirm.
-5. **Find what you kept.** Library has two tabs, Favorites and Archive.
+1. **Start.** Open Sift and allow access to your Photos. Sift only looks for screenshots that are more than 30 days old. Your photos stay on your phone.
+2. **Review.** Sift shows one screenshot at a time. Swipe left for Trash, right for Archive, or up for Favorites. If you make a mistake, tap Rewind to undo the last swipe.
+3. **Finish.** When there are no screenshots left to review, you're done. You can also turn on a reminder for your next cleanup.
+4. **Delete.** Open Trash to see the screenshots you chose to remove. You can restore anything you want to keep, or delete everything at once.
+5. **Find saved screenshots.** Open Library to see the screenshots you kept in Favorites or Archive.
 
 ## Try it
+
+Try the Sift simulator in your browser. Swipe the sample screenshots left, right, or up to see how Sift works. Nothing you do in the simulator is saved or sent anywhere.
 
 <p align="center">
   <iframe src="simulator.html" title="Sift simulator" width="100%" height="900" style="border:0; max-width:460px; height:min(960px, 92vh)" loading="lazy"></iframe>
 </p>
 
-<p align="center"><sub>The app, simulated in your browser with six sample screenshots. Drag a card left, right or up, or use the arrow keys. Nothing you do here is stored or sent. <a href="https://heejae92.github.io/Sift/simulator.html">Open the simulator</a></sub></p>
+<p align="center"><sub><a href="https://heejae92.github.io/Sift/simulator.html">Open the simulator on its own page</a></sub></p>
 
 ---
 
-Course project for IXD 750 Product Innovation (category: Ritual), Academy of Art University, 2026.
+Course project for IXD 750 Product Innovation, Academy of Art University, 2026.
 
-**More:** [Simulator](https://heejae92.github.io/Sift/simulator.html) · [Code on GitHub](https://github.com/Heejae92/Sift) · [Design system](https://heejae92.github.io/Sift/design-system.html) · [Information architecture](https://heejae92.github.io/Sift/ia.html) · [Developer notes](https://github.com/Heejae92/Sift/blob/main/docs/DEVELOPMENT.md)
+**More:** [Simulator](https://heejae92.github.io/Sift/simulator.html) · [GitHub](https://github.com/Heejae92/Sift) · [Design System](https://heejae92.github.io/Sift/design-system.html) · [App Structure](https://heejae92.github.io/Sift/ia.html) · [Developer Notes](https://github.com/Heejae92/Sift/blob/main/docs/DEVELOPMENT.md)
